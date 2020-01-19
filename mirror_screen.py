@@ -17,14 +17,8 @@ from win32con import WS_EX_TOOLWINDOW
 
 
 _WIDTH = GetSystemMetrics(0)
-_HEIGHT = GetSystemMetrics(1)
+_HEIGHT = GetSystemMetrics(17)
 
-    
-def get_window_pos():
-    """
-    This function will 
-    """
-    GetSystemMetrics(76)
 
 def check_extended_display():
     t_width, t_height = GetSystemMetrics(79), GetSystemMetrics(78)
