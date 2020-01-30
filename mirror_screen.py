@@ -9,15 +9,62 @@ from multiprocessing import Process
 from zlib import compress
 import time
 from mss import mss
-import win32gui
 from win32con import SW_HIDE
 from win32con import SW_SHOW
 from win32con import GWL_EXSTYLE 
 from win32con import WS_EX_TOOLWINDOW
-
+import numpy as np
+import win32gui, win32ui
+from PIL import Image
 
 _WIDTH = GetSystemMetrics(0)
 _HEIGHT = GetSystemMetrics(17)
+
+
+def set_pixel(img, w, x, y, rgb=(0,0,0)):
+    """
+    Set a pixel in a, RGB byte array
+    """
+    pos = (x*w + y)*3
+    if pos>=len(img):return img # avoid setting pixel outside of frame
+    img[pos:pos+3] = rgb
+    return img
+
+def add_mouse(img, w):
+    img = bytearray(img)
+    flags, hcursor, (cx,cy) = win32gui.GetCursorInfo()
+    cursor = get_cursor(hcursor)
+    cursor_mean = cursor.mean(-1)
+    where = np.where(cursor_mean>0)
+    for x, y in zip(where[0], where[1]):
+        rgb = [x for x in cursor[x,y]]
+        img = set_pixel(img, w, x+cy, y+cx, rgb=rgb)
+    return img
+
+
+def get_cursor(hcursor):
+    info = win32gui.GetCursorInfo()
+    hdc = win32ui.CreateDCFromHandle(win32gui.GetDC(0))
+    hbmp = win32ui.CreateBitmap()
+    hbmp.CreateCompatibleBitmap(hdc, 36, 36)
+    hdc = hdc.CreateCompatibleDC()
+    hdc.SelectObject(hbmp)
+    hdc.DrawIcon((0,0), hcursor)
+    
+    bmpinfo = hbmp.GetInfo()
+    bmpbytes = hbmp.GetBitmapBits()
+    bmpstr = hbmp.GetBitmapBits(True)
+    im = np.array(Image.frombuffer(
+        'RGB',
+         (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
+         bmpstr, 'raw', 'BGRX', 0, 1))
+    
+    win32gui.DestroyIcon(hcursor)    
+    win32gui.DeleteObject(hbmp.GetHandle())
+    hdc.DeleteDC()
+    return im
+
+
 
 
 def check_extended_display():
@@ -64,8 +111,7 @@ def send_screenshot(conn):
             else:
                 # Take a new screenshot
                 img = sct.grab(rect).rgb
-            
-            x,y = win32gui.GetCursorPos()
+                img = add_mouse(img, w=rect['width']) # add mouse
             pixels = compress(img, 1)
             # Send the size of the pixels length
             size = len(pixels)
@@ -91,7 +137,7 @@ def client(host='127.0.0.1', port=5089):
         res = [int(x) for x in custom_res.split(',')]
     else:
         res = (0, 0)
-    screen = pygame.display.set_mode(res)
+    screen = pygame.display.set_mode((800,600))
     watching = True    
 
     sock = socket()
@@ -150,11 +196,11 @@ def host(host='localhost', port=5089):
 
 
 def main():
-    if not GetSystemMetrics(80)==2: # checks number of attached screens
-        raise Exception('Second screen is not attached.')
-    if not check_extended_display():
-        raise Exception('\nDer Bildschirm ist nicht im modus "Erweitert"".\n'\
-                        'Bitte drücke WINDOWS + P und wähle "Erweitert".')
+    # if not GetSystemMetrics(80)==2: # checks number of attached screens
+    #     raise Exception('Second screen is not attached.')
+    # if not check_extended_display():
+    #     raise Exception('\nDer Bildschirm ist nicht im modus "Erweitert"".\n'\
+    #                     'Bitte drücke WINDOWS + P und wähle "Erweitert".')
     
     p = Process(target=host)
     p.start()
