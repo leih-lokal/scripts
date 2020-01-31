@@ -21,8 +21,7 @@ def get_reminder_template(customer, rental):
     string = 'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
              'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
               'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} ({rental.item_id})) wieder abzugeben. '\
-              'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.
-
+              'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
               'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
               'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
               'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
