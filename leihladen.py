@@ -27,7 +27,7 @@ def get_reminder_template(customer, rental):
               'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
               'Grüße aus dem leih.lokal\n\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
 
-    return f'Hey {customer.firstname} {customer.lastname} please return {rental.item_name}'
+    return string
 
 CUSTOMER_DELETION_NOTIFICATION_TITLE = "{} Kunde(n) sollten manuell gelöscht werden"
 CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Ausweiskopie vernichtet werden.\n\nDieses Programm löscht keine Daten."""
