@@ -18,7 +18,7 @@ from email.header import decode_header
 ############ SETTINGS ################################################ 
 def get_reminder_template(customer, rental):
     
-    string = 'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
+    string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
              'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
               'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} ({rental.item_id})) wieder abzugeben. '\
               'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
