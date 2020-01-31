@@ -33,7 +33,7 @@ CUSTOMER_DELETION_NOTIFICATION_TITLE = "{} Kunde(n) sollten manuell gelöscht we
 CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Ausweiskopie vernichtet werden.\n\nDieses Programm löscht keine Daten."""
 
 # set the sent folder of thunderbird in this file so it doesnt upload to github
-with open('thunderbird-profile-path.txt', 'r') as f
+with open('thunderbird-profile-path.txt', 'r') as f:
     mboxfile = f.read().strip()
 
 ############ END SETTINGS ############################################
