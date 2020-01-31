@@ -1,5 +1,5 @@
 pip install pygame
-pip install pyexcel
+pip install pyexcel pyexcel-ods pyexcel-ods3
 pip instal pprint
 pip install win32gui
 pip install win32con
