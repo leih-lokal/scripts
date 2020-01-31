@@ -19,13 +19,13 @@ from email.header import decode_header
 def get_reminder_template(customer, rental):
     
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
-             'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
-              'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} ({rental.item_id})) wieder abzugeben. '\
-              'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
-              'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
-              'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
-              'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
-              'Grüße aus dem leih.lokal\n\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+             f'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
+             f'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} ({rental.item_id})) wieder abzugeben. '\
+             f'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
+             f'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
+             f'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
+             f'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
+             f'Grüße aus dem leih.lokal\n\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
 
     return string
 
