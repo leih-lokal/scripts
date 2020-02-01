@@ -32,7 +32,7 @@ def get_reminder_template(customer, rental):
 CUSTOMER_DELETION_NOTIFICATION_TITLE = "{} Kunde(n) sollten manuell gelöscht werden"
 CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Ausweiskopie vernichtet werden.\n\nDieses Programm löscht keine Daten."""
 
-# set the sent folder of thunderbird in this file so it doesnt upload to github
+# in the settings.json we save user-specific variables. the file will never be uploaded to github
 
 with open('settings.json', 'r') as f:
     settings = json.load(f)
@@ -150,7 +150,7 @@ class Store:
         return 
 
     def get_recently_sent_reminders(self):
-        sent = mailbox.mbox(mboxfile)
+        sent = mailbox.mbox(settings['thunderbird-profile'])
         
         if len(sent)==0:
             raise FileNotFoundError('mailbox not found at {mboxfile}. Please add in file under SETTINGS')
@@ -231,7 +231,7 @@ def notify(title: str, text: str, timeout: int = 120, with_blocking_popup: bool 
 
 
 if __name__ == '__main__':
-    excel_file = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "Leihgegenständeliste.ods")
+    excel_file = settings['leihgegenstaendeliste']
     while True:
         store = Store.parse_file(excel_file)
         try:
