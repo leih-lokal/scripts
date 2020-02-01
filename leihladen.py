@@ -4,29 +4,37 @@
 
 import datetime
 import sys
-import os
 import time
 from dataclasses import dataclass, field
-from pprint import pprint
 import webbrowser
 import pyexcel as pe
 from typing import List, Dict, Callable, Optional
 import mailbox
 from email.header import decode_header
 import json
+import urllib.parse
 
 ############ SETTINGS ################################################ 
 def get_reminder_template(customer, rental):
-    
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
              f'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
-             f'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} ({rental.item_id})) wieder abzugeben. '\
+             f'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
              f'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
              f'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
              f'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
              f'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
-             f'Grüße aus dem leih.lokal\n\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+             f'Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+    string = urllib.parse.quote(string)
+    return string
 
+def get_deletion_template(customer, rental):
+    string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n'\
+             f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr.'\
+             f'Aus Datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
+             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, bitten wir sie uns dies als Antwort auf diese Mail mitzuteilen.\n\n'
+             f'Wir behalten Sie dann weiterhin in unserem System.\n\n'\
+             f'Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+    string = urllib.parse.quote(string)
     return string
 
 CUSTOMER_DELETION_NOTIFICATION_TITLE = "{} Kunde(n) sollten manuell gelöscht werden"
@@ -141,7 +149,7 @@ class Store:
         """doesnt actually send, just opens the mail program with the template"""
         customer = self.customers.get(rental.customer_id, f'Name for {rental.customer_id} not found')
         body = get_reminder_template(customer, rental)
-        subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name}'
+        subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
         recipient = customer.email
         if not recipient: 
             print(f'{customer.firstname} {customer.lastname}({customer.id}, rented {rental.item_id}:{rental.item_name}) has no email. Please call manually')
@@ -163,29 +171,35 @@ class Store:
             to=to.strip()
             subject = message.get('Subject')
             subject = decode_header(subject)[0][0]
+            datestr = message.get('Date')[:16].strip()
+            date = datetime.datetime.strptime(datestr, '%a, %d %b %Y')
+            diff = datetime.datetime.now() - date
             
             if not isinstance(subject, str): subject = subject.decode()
             
-            if '[leih.lokal] Erinnerung' in subject:
+            # do not send reminder if last one has been sent within the last 10 days
+            if '[leih.lokal] Erinnerung' in subject and diff.days<10:
                 filter = lambda c: c.email==to
-                customer = self.filter_customers(filter)
-                customers_reminded.append(customer[0])
-                if len(customer)>1: 
-                    print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customer]}')
+                customers = self.filter_customers(filter)
+                customer = customers[0]
+                customers_reminded.append(customer)
+                if len(customers)>1: 
+                    print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
         return customers_reminded
+    
 
-    def filter_customers(self, predicate: Callable[[Customer], bool]) -> 'Store':
+    def filter_customers(self, predicate: Callable[[Customer], bool]) -> List[Customer]:
         customers = [customer for customer in self.customers.values() if predicate(customer)]
         return customers
     
-    def filter_rentals(self, predicate: Callable[[Customer], bool]) -> 'Store':
+    def filter_rentals(self, predicate: Callable[[Customer], bool]) -> List[Rental]:
         rentals = [rental for rental in self.rentals if predicate(rental)]
         return rentals
     
     def get_customers_for_deletion(self, min_full_started_days_since_last_contractual_interaction: int = 360) -> 'Store':
         filter = lambda c: (datetime.datetime.now().date() - c.last_contractual_interaction()).days\
             >= min_full_started_days_since_last_contractual_interaction
-        return self.filter_rentals(filter)
+        return self.filter_customers(filter)
 
     def get_overdue_reminders(self):
         filter = lambda r: (r.to_return_on < datetime.datetime.now().date()) and not\
@@ -202,7 +216,8 @@ class Store:
         """
         :return: really sent a notification
         """
-        customers = self.get_customers_for_deletion().customers.values()
+        print('Suche nach Mitgliedern die geloescht werden müssen')
+        customers = self.get_customers_for_deletion()
         if len(customers) > 0:
             notify(CUSTOMER_DELETION_NOTIFICATION_TITLE.format(len(customers)),
                    CUSTOMER_DELETION_NOTIFICATION_TEXT.format(", ".join(customer.short() for customer in customers)),
@@ -211,9 +226,13 @@ class Store:
         return False
     
     def send_notifications_for_customer_return_rental(self) -> bool:
+        print('Suche nach überschrittenen Ausleihfristen')
         rentals_overdue = self.get_overdue_reminders()
+        customers_reminded = self.get_recently_sent_reminders()
+        customers_reminded_ids = [c.id for c in customers_reminded]
         for rental in rentals_overdue[:5]:
-            self.send_reminder(rental)
+            if not rental.customer_id in customers_reminded_ids: 
+                self.send_reminder(rental)
             
         if len(rentals_overdue)>5: 
             printed = '\n'.join([str(rental) for rental in rentals_overdue])
@@ -232,12 +251,7 @@ def notify(title: str, text: str, timeout: int = 120, with_blocking_popup: bool 
 
 if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
-    while True:
-        store = Store.parse_file(excel_file)
-        try:
-            store.send_notifications_for_customer_return_rental()
-            store.send_notification_for_customers_on_deletion()
-        except Exception as ex:
-            print(ex, file=sys.stderr)
-        time.sleep(1)
-        break
+    store = Store.parse_file(excel_file)
+    store.send_notifications_for_customer_return_rental()
+    store.send_notification_for_customers_on_deletion()
+
