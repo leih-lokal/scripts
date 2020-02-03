@@ -1,7 +1,19 @@
 #! python3
 
 # requires pyexcel, pyexcel-ods, plyer and pymsgbox packages to be installed, first argument is the ods file
+"""
 
+Ideas for statistic:
+    - average rentals/day/month, chart/graph
+    - bussiest day
+    - average items rented at any moment
+    - how many people, how many items
+    - items: how often
+    - deposit "x people trusted us with X deposit, we returned X"
+    - overdue amount
+
+
+"""
 import datetime
 import sys
 import time
@@ -31,7 +43,7 @@ def get_deletion_template(customer, rental):
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n'\
              f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr.'\
              f'Aus Datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
-             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, bitten wir sie uns dies als Antwort auf diese Mail mitzuteilen.\n\n'
+             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, bitten wir sie uns dies als Antwort auf diese Mail mitzuteilen.\n\n'\
              f'Wir behalten Sie dann weiterhin in unserem System.\n\n'\
              f'Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
     string = urllib.parse.quote(string)
@@ -187,7 +199,6 @@ class Store:
                     print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
         return customers_reminded
     
-
     def filter_customers(self, predicate: Callable[[Customer], bool]) -> List[Customer]:
         customers = [customer for customer in self.customers.values() if predicate(customer)]
         return customers
