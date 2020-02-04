@@ -136,6 +136,8 @@ class Store:
         self.customers = customers
         self.rentals = rentals
         self.items = items
+        
+    
 
     @classmethod
     def parse_file(cls, file: str) -> 'Store':
@@ -157,7 +159,7 @@ class Store:
                 store.rentals.append(rental)
         return store
     
-    def send_reminder(self, rental):
+    def send_reminder(self, rental: Rental) -> None:
         """doesnt actually send, just opens the mail program with the template"""
         customer = self.customers.get(rental.customer_id, f'Name for {rental.customer_id} not found')
         body = get_reminder_template(customer, rental)
@@ -169,9 +171,9 @@ class Store:
         webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
         return 
 
-    def get_recently_sent_reminders(self):
+    def get_recently_sent_reminders(self) -> None:
         sent = mailbox.mbox(settings['thunderbird-profile'])
-        
+
         if len(sent)==0:
             raise FileNotFoundError('mailbox not found at {mboxfile}. Please add in file under SETTINGS')
         
@@ -212,7 +214,7 @@ class Store:
             >= min_full_started_days_since_last_contractual_interaction
         return self.filter_customers(filter)
 
-    def get_overdue_reminders(self):
+    def get_overdue_reminders(self) -> List[Rental]:
         filter = lambda r: (r.to_return_on < datetime.datetime.now().date()) and not\
                             isinstance(r.returned_on, datetime.date)
         return self.filter_rentals(filter)
