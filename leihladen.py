@@ -29,10 +29,12 @@ from tqdm import tqdm
 
 ############ SETTINGS ################################################ 
 def get_reminder_template(customer, rental):
+    rented_on = rental.rented_on.strftime('%d.%m.%Y')
+    to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
              f'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
-             f'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
-             f'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
+             f'Wir möchten Sie daran erinnern, den am {rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
+             f'Der bei uns vermerkte Rückgabetermin war der {to_return_on}.\n\n'\
              f'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
              f'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
              f'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
@@ -274,5 +276,5 @@ if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
     store = Store.parse_file(excel_file)
     store.send_notifications_for_customer_return_rental()
-    store.send_notification_for_customers_on_deletion()
+    #store.send_notification_for_customers_on_deletion()
 
