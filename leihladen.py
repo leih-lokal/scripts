@@ -25,6 +25,7 @@ import mailbox
 from email.header import decode_header
 import json
 import urllib.parse
+from tqdm import tqdm
 
 ############ SETTINGS ################################################ 
 def get_reminder_template(customer, rental):
@@ -109,9 +110,9 @@ class Rental:
 
     item_id: int
     item_name: str
-    rented_on: datetime.date
-    extended_on: datetime.date
-    to_return_on: datetime.date
+    rented_on: datetime.datetime
+    extended_on: datetime.datetime
+    to_return_on: datetime.datetime
     passing_out_employee: str
     customer_id: int
     name: str
@@ -172,24 +173,28 @@ class Store:
         return 
 
     def get_recently_sent_reminders(self) -> None:
-        sent = mailbox.mbox(settings['thunderbird-profile'])
+        mboxfile = settings['thunderbird-profile']
+        sent = mailbox.mbox(mboxfile)
 
         if len(sent)==0:
-            raise FileNotFoundError('mailbox not found at {mboxfile}. Please add in file under SETTINGS')
+            raise FileNotFoundError(f'mailbox not found at {mboxfile}. Please add in file under SETTINGS')
         
         customers_reminded = []
-        for message in sent:
+        for message in tqdm(sent):
             to = message.get('To')
             if '<' in to:
                 to = to.split('<')[-1][:-1]
             to=to.strip()
             subject = message.get('Subject')
+            if not subject: continue
             subject = decode_header(subject)[0][0]
             datestr = message.get('Date')[:16].strip()
             date = datetime.datetime.strptime(datestr, '%a, %d %b %Y')
             diff = datetime.datetime.now() - date
             
-            if not isinstance(subject, str): subject = subject.decode()
+            if not isinstance(subject, str) and subject: 
+                try: subject = subject.decode()
+                except: subject = str(subject)
             
             # do not send reminder if last one has been sent within the last 10 days
             if '[leih.lokal] Erinnerung' in subject and diff.days<10:
@@ -215,8 +220,9 @@ class Store:
         return self.filter_customers(filter)
 
     def get_overdue_reminders(self) -> List[Rental]:
-        filter = lambda r: (r.to_return_on < datetime.datetime.now().date()) and not\
-                            isinstance(r.returned_on, datetime.date)
+        filter = lambda r: ((not 'datetime.datetime' in str(type(r.to_return_on))) and \
+                            r.to_return_on < datetime.datetime.now().date() and \
+                            not isinstance(r.returned_on, datetime.date))
         return self.filter_rentals(filter)
 
     def __repr__(self) -> str:
@@ -242,6 +248,8 @@ class Store:
         print('Suche nach überschrittenen Ausleihfristen')
         rentals_overdue = self.get_overdue_reminders()
         customers_reminded = self.get_recently_sent_reminders()
+        print(f'{len(rentals_overdue)} überfällige Ausleihen gefunden.')
+
         customers_reminded_ids = [c.id for c in customers_reminded]
         for rental in rentals_overdue[:5]:
             if not rental.customer_id in customers_reminded_ids: 
