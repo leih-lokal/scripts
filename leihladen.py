@@ -25,14 +25,17 @@ import mailbox
 from email.header import decode_header
 import json
 import urllib.parse
+from tqdm import tqdm
 
 
 ############ SETTINGS ################################################ 
 def get_reminder_template(customer, rental):
+    rented_on = rental.rented_on.strftime('%d.%m.%Y')
+    to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
              f'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
-             f'Wir möchten Sie daran erinnern, den am {rental.rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
-             f'Der bei uns vermerkte Rückgabetermin war der {rental.to_return_on}.\n\n'\
+             f'Wir möchten Sie daran erinnern, den am {rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
+             f'Der bei uns vermerkte Rückgabetermin war der {to_return_on}.\n\n'\
              f'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
              f'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
              f'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
@@ -54,6 +57,7 @@ CUSTOMER_DELETION_NOTIFICATION_TITLE = "{} Kunde(n) sollten manuell gelöscht we
 CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Ausweiskopie vernichtet werden.\n\nDieses Programm löscht keine Daten."""
 
 # in the settings.json we save user-specific variables. the file will never be uploaded to github
+
 
 with open('settings.json', 'r', encoding='latin1') as f:
     settings = json.load(f)
@@ -110,9 +114,10 @@ class Rental:
 
     item_id: int
     item_name: str
-    rented_on: datetime.date
-    extended_on: datetime.date
-    to_return_on: datetime.date
+
+    rented_on: datetime.datetime
+    extended_on: datetime.datetime
+    to_return_on: datetime.datetime
     passing_out_employee: str
     customer_id: int
     name: str
@@ -166,31 +171,40 @@ class Store:
         body = get_reminder_template(customer, rental)
         subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
         recipient = customer.email
-        if not recipient: 
+
+        if not '@' in recipient: 
             print(f'{customer.firstname} {customer.lastname}({customer.id}, rented {rental.item_id}:{rental.item_name}) has no email. Please call manually')
             return
         webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
         return 
 
     def get_recently_sent_reminders(self) -> None:
-        sent = mailbox.mbox(settings['thunderbird-profile'])
+
+        mboxfile = settings['thunderbird-profile']
+        sent = mailbox.mbox(mboxfile)
 
         if len(sent)==0:
-            raise FileNotFoundError('mailbox not found at {mboxfile}. Please add in file under SETTINGS')
+
+            raise FileNotFoundError(f'mailbox not found at {mboxfile}. Please add in file under SETTINGS')
         
         customers_reminded = []
-        for message in sent:
+
+        for message in tqdm(sent):
             to = message.get('To')
             if '<' in to:
                 to = to.split('<')[-1][:-1]
             to=to.strip()
             subject = message.get('Subject')
+            if not subject: continue
             subject = decode_header(subject)[0][0]
             datestr = message.get('Date')[:16].strip()
             date = datetime.datetime.strptime(datestr, '%a, %d %b %Y')
             diff = datetime.datetime.now() - date
             
-            if not isinstance(subject, str): subject = subject.decode()
+
+            if not isinstance(subject, str) and subject: 
+                try: subject = subject.decode()
+                except: subject = str(subject)
             
             # do not send reminder if last one has been sent within the last 10 days
             if '[leih.lokal] Erinnerung' in subject and diff.days<10:
@@ -203,12 +217,26 @@ class Store:
         return customers_reminded
     
     def filter_customers(self, predicate: Callable[[Customer], bool]) -> List[Customer]:
-        customers = [customer for customer in self.customers.values() if predicate(customer)]
-        return customers
+        filtered = []
+        for customer in self.customers.values():
+            try: 
+                filter = predicate(customer)
+                if filter:
+                    filtered.append(customer)
+            except Exception as e:
+                print(f'Error filtering customer {customer}: {e}')
+        return filtered
     
     def filter_rentals(self, predicate: Callable[[Customer], bool]) -> List[Rental]:
-        rentals = [rental for rental in self.rentals if predicate(rental)]
-        return rentals
+        filtered = []
+        for rental in self.rentals:
+            try: 
+                filter = predicate(rental)
+                if filter:
+                    filtered.append(rental)
+            except Exception as e:
+                print(f'Error filtering rental {rental}: {e}')
+        return filtered
     
     def get_customers_for_deletion(self, min_full_started_days_since_last_contractual_interaction: int = 360) -> 'Store':
         filter = lambda c: (datetime.datetime.now().date() - c.last_contractual_interaction()).days\
@@ -216,8 +244,9 @@ class Store:
         return self.filter_customers(filter)
 
     def get_overdue_reminders(self) -> List[Rental]:
-        filter = lambda r: (r.to_return_on < datetime.datetime.now().date()) and not\
-                            isinstance(r.returned_on, datetime.date)
+        filter = lambda r: ((not 'datetime.datetime' in str(type(r.to_return_on))) and \
+                            r.to_return_on < datetime.datetime.now().date() and \
+                            not isinstance(r.returned_on, datetime.date))
         return self.filter_rentals(filter)
 
     def __repr__(self) -> str:
@@ -243,15 +272,21 @@ class Store:
         print('Suche nach überschrittenen Ausleihfristen')
         rentals_overdue = self.get_overdue_reminders()
         customers_reminded = self.get_recently_sent_reminders()
+        print(f'{len(rentals_overdue)} überfällige Ausleihen gefunden.')
+
         customers_reminded_ids = [c.id for c in customers_reminded]
-        for rental in rentals_overdue[:5]:
+        for rental in rentals_overdue[:10]:
             if not rental.customer_id in customers_reminded_ids: 
                 self.send_reminder(rental)
             
-        if len(rentals_overdue)>5: 
-            printed = '\n'.join([str(rental) for rental in rentals_overdue])
-            print(f'There are {len(rentals_overdue)} reminders to be sent. '\
-                   'only showing first 5. Rest: \n' + printed)
+        if len(rentals_overdue)>10: 
+            printed = '\n'
+            for rental in rentals_overdue:
+                customer = self.customers[rental.customer_id]
+                printed += f'customer {rental.customer_id} ({customer.firstname} {customer.lastname}): item {rental.item_id} (rental.item_name) on {rental.to_return_on}\n'
+           
+            print(f'\n\nThere are {len(rentals_overdue)} reminders to be sent. '\
+                   'only showing first 10. \nThe rest is: \n' + printed)
         return True
     
     def plot_statistics(self):
