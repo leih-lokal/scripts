@@ -26,6 +26,7 @@ from email.header import decode_header
 import json
 import urllib.parse
 
+
 ############ SETTINGS ################################################ 
 def get_reminder_template(customer, rental):
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
@@ -54,7 +55,7 @@ CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Au
 
 # in the settings.json we save user-specific variables. the file will never be uploaded to github
 
-with open('settings.json', 'r') as f:
+with open('settings.json', 'r', encoding='latin1') as f:
     settings = json.load(f)
 
 ############ END SETTINGS ############################################
@@ -252,7 +253,25 @@ class Store:
             print(f'There are {len(rentals_overdue)} reminders to be sent. '\
                    'only showing first 5. Rest: \n' + printed)
         return True
+    
+    def plot_statistics(self):
+        import matplotlib.pyplot as plt
+        rentals = store.rentals
+        months = [str(r.rented_on.month)+'/'+str(r.rented_on.year-2000) for r in rentals]
+        plt.hist(months)
+        plt.title('Ausleihen pro Monat')
+        
+        rented = [r.rented_on.strftime('%A') for r in rentals]
+        rented = [d for d in rented if not d in ['Sunday', 'Tuesday']]
+        plt.figure()
+        plt.hist(rented, 7)
+        plt.title('Ausleihen pro Tag')
 
+        returned = [r.returned_on.strftime('%A') for r in rentals if isinstance(r.returned_on, datetime.date)]
+        returned = [d for d in returned if not d in ['Sunday', 'Tuesday']]
+        plt.figure()
+        plt.hist(returned)
+        plt.title('Rückgabe pro Tag')
 
 def notify(title: str, text: str, timeout: int = 120, with_blocking_popup: bool = False):
     import plyer
@@ -265,6 +284,7 @@ def notify(title: str, text: str, timeout: int = 120, with_blocking_popup: bool 
 if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
     store = Store.parse_file(excel_file)
-    store.send_notifications_for_customer_return_rental()
-    store.send_notification_for_customers_on_deletion()
+    store.plot_statistics()
+    # store.send_notifications_for_customer_return_rental()
+    # store.send_notification_for_customers_on_deletion()
 
