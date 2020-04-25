@@ -67,7 +67,7 @@ codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
     
 # now download the images, store them.
 # poor webserver, we download everything in batches of 100. should be quite fast.
-images = Parallel(n_jobs=32, prefer='threads')(delayed(get)(url) for url in tqdm(images_urls))
+images = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(images_urls))
 images = [img.content for img in images]
 
 os.makedirs('products', exist_ok=True)
@@ -153,15 +153,18 @@ def make_slide(code):
     
     
 
-    
+# approximately the display size
 width = Cm(33)
 height = Cm(20)
 prs = Presentation()
 prs.slide_width = width
 prs.slide_height = height
 
-for code in tqdm(codes[:200], desc='writing pptx'):
+for code in tqdm(codes, desc='writing pptx'):
+    # for all items: create a slide.
     make_slide(code)
-prs.save('raspberry-pi-fenster.pptx')
     
+prs.save('raspberry-pi-fenster.pptx')
+
+# now open it
 os.startfile( os.path.abspath('raspberry-pi-fenster.pptx'))
