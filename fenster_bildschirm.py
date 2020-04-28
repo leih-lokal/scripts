@@ -23,6 +23,15 @@ from pptx.dml.color import RGBColor
 
 sortiment_url = 'https://www.buergerstiftung-karlsruhe.de/leihlokal/sortiment/?product-page='
 
+def download_image(url, code):
+    file = os.path.join('products', f'{code}.jpg')
+    if not os.path.isdir('products'): 
+        os.makedirs('products')
+    c = get(url)
+    with open(file, 'wb') as f:
+        f.write(c.content)
+    return True
+
 def get(url, sleep=0.5):
     """retrieve an url and wait some second"""
     c = requests.get(url)
@@ -67,14 +76,8 @@ codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
     
 # now download the images, store them.
 # poor webserver, we download everything in batches of 100. should be quite fast.
-images = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(images_urls))
-images = [img.content for img in images]
-
-os.makedirs('products', exist_ok=True)
-for code, img in zip(codes, images):
-    with open(os.path.join('products', f'{code}.jpg'), 'wb') as f:
-        f.write(img)
-
+images = Parallel(n_jobs=8, prefer='threads')(
+        delayed(download_image)(url, code) for url, code in tqdm(list(zip(images_urls, codes))))
 
 products_mapping = {code:name for code, name in zip(codes, names)}
 

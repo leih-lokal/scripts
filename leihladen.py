@@ -250,7 +250,7 @@ class Store:
         return self.filter_rentals(filter)
 
     def __repr__(self) -> str:
-        return f"Customers: \n{repr(self.customers)} \n\n\n Rentals: \n {repr(self.rentals)}"
+        return f"{len(self.items)}, items {len(self.customers)}, customers {len(self.rentals)} rentals"
 
     def empty(self) -> bool:
         return len(self.customers) == 0
