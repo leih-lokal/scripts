@@ -43,13 +43,14 @@ def get_reminder_template(customer, rental):
     string = urllib.parse.quote(string)
     return string
 
-def get_deletion_template(customer, rental):
+def get_deletion_template(customer):
+    lastinteraction = customer.last_contractual_interaction().strftime('%d.%m.%Y')
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n'\
-             f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr.'\
-             f'Aus Datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
-             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, bitten wir sie uns dies als Antwort auf diese Mail mitzuteilen.\n\n'\
-             f'Wir behalten Sie dann weiterhin in unserem System.\n\n'\
-             f'Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+             f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr ({lastinteraction}).\n'\
+             f'Aus datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
+             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, antworten Sie bitte kurz auf diese Mail.\n\n'\
+             f'Falls wir keine Antwort erhalten, werden wir Ihre Daten aus dem System entfernen.\n\n'\
+             f'Liebe Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
     string = urllib.parse.quote(string)
     return string
 
@@ -63,7 +64,7 @@ with open('settings.json', 'r', encoding='latin1') as f:
     settings = json.load(f)
 
 ############ END SETTINGS ############################################
-#%%
+
         
 @dataclass
 class Customer:
@@ -165,6 +166,19 @@ class Store:
                 store.rentals.append(rental)
         return store
     
+    def send_deletion_reminder(self, customer: Customer) -> None:
+        """doesnt actually send, just opens the mail program with the template"""
+        customer = self.customers.get(customer.id, f'Name for {customer.id} not found')
+        body = get_deletion_template(customer)
+        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 356 Tagen.'
+        recipient = customer.email
+
+        if not '@' in recipient: 
+            print(f'Keine Email hinterlegt: {customer}')
+            return
+        webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
+        return 
+    
     def send_reminder(self, rental: Rental) -> None:
         """doesnt actually send, just opens the mail program with the template"""
         customer = self.customers.get(rental.customer_id, f'Name for {rental.customer_id} not found')
@@ -178,14 +192,15 @@ class Store:
         webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
         return 
 
-    def get_recently_sent_reminders(self) -> None:
+    def get_recently_sent_reminders(self, pattern='[leih.lokal] Erinnerung') -> None:
 
         mboxfile = settings['thunderbird-profile']
         sent = mailbox.mbox(mboxfile)
 
         if len(sent)==0:
 
-            raise FileNotFoundError(f'mailbox not found at {mboxfile}. Please add in file under SETTINGS')
+            raise FileNotFoundError(f'mailbox not found at {mboxfile}. '
+                                    'Please add in file under SETTINGS')
         
         customers_reminded = []
 
@@ -207,7 +222,7 @@ class Store:
                 except: subject = str(subject)
             
             # do not send reminder if last one has been sent within the last 10 days
-            if '[leih.lokal] Erinnerung' in subject and diff.days<10:
+            if pattern in subject and diff.days<10:
                 filter = lambda c: c.email==to
                 customers = self.filter_customers(filter)
                 customer = customers[0]
@@ -238,7 +253,7 @@ class Store:
                 print(f'Error filtering rental {rental}: {e}')
         return filtered
     
-    def get_customers_for_deletion(self, min_full_started_days_since_last_contractual_interaction: int = 360) -> 'Store':
+    def get_customers_for_deletion(self, min_full_started_days_since_last_contractual_interaction: int = 365) -> 'Store':
         filter = lambda c: (datetime.datetime.now().date() - c.last_contractual_interaction()).days\
             >= min_full_started_days_since_last_contractual_interaction
         return self.filter_customers(filter)
@@ -259,16 +274,42 @@ class Store:
         """
         :return: really sent a notification
         """
+        print('#'*25)
         print('Suche nach Mitgliedern die geloescht werden müssen')
         customers = self.get_customers_for_deletion()
-        if len(customers) > 0:
-            notify(CUSTOMER_DELETION_NOTIFICATION_TITLE.format(len(customers)),
-                   CUSTOMER_DELETION_NOTIFICATION_TEXT.format(", ".join(customer.short() for customer in customers)),
-                   with_blocking_popup=with_blocking_popup)
-            return True
+        print(f'{len(customers)} Kunden gefunden die seit 356 Tagen nichts geliehen haben.')
+        
+        # customers_reminded_id = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung')
+        # customers_reminded_ids = [c.id for c in customers_reminded_id]
+        show_n = 10
+        if len(customers)>10: 
+            show_n = 'nan'
+            while not show_n.isdigit():
+                show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
+                               f'Zahl eintippen und mit <enter> bestaetigen.\n')
+                if show_n=='': 
+                    print('abgebrochen...')
+                    return
+                if not show_n.isdigit() or int(show_n)<1:
+                    print('Muss eine Zahl sein.')
+            show_n = int(show_n)
+            
+        for customer in customers[:show_n]:
+            # if not rental.customer_id in customers_reminded_ids: 
+            self.send_deletion_reminder(customer)
+            
+        if len(customers)>show_n: 
+            printed = '\n'
+            for customer in customers:
+                customer = self.customers[customer.id]
+                printed += f'{customer} \n'
+           
+            print(f'\n\nDie restlichen sind:\n{printed}\n\nBitte verschicke'
+                  ' die eMails und lasse das Script erneut laufen.')
         return False
     
     def send_notifications_for_customer_return_rental(self) -> bool:
+        print('#'*25)
         print('Suche nach überschrittenen Ausleihfristen')
         rentals_overdue = self.get_overdue_reminders()
         customers_reminded = self.get_recently_sent_reminders()
@@ -285,8 +326,10 @@ class Store:
                 customer = self.customers[rental.customer_id]
                 printed += f'customer {rental.customer_id} ({customer.firstname} {customer.lastname}): item {rental.item_id} (rental.item_name) on {rental.to_return_on}\n'
            
-            print(f'\n\nThere are {len(rentals_overdue)} reminders to be sent. '\
-                   'only showing first 10. \nThe rest is: \n' + printed)
+            print(f'\n\nEs gibt {len(rentals_overdue)} Loescherinnerungen zu senden. '\
+                   f'Nur die ersten 10 werden automatisch erstellt. \nDer rest ist: \n' + printed + 
+                   f'\n\n Ende der Liste. Nachdem die Mails geschickt wurden kann das '
+                   f'Script erneut ausgeführt werden und die nächsten 10 werden erzeugt.')
         return True
     
     def plot_statistics(self):
@@ -319,7 +362,8 @@ def notify(title: str, text: str, timeout: int = 120, with_blocking_popup: bool 
 if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
     store = Store.parse_file(excel_file)
-    store.plot_statistics()
+    # store.plot_statistics()
     # store.send_notifications_for_customer_return_rental()
-    # store.send_notification_for_customers_on_deletion()
+    store.send_notification_for_customers_on_deletion()
 
+    self=store # debugging made easier
