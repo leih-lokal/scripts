@@ -293,6 +293,7 @@ class Store:
         
         already_sent = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
         customers = [c for c in customers if c not in already_sent]
+        customers = [c for c in customers if not (c.lastname=='' and c.firstname=='')]
         # this list has all kunden which did not respons within 10 days.
         to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>-1]
         
@@ -300,7 +301,6 @@ class Store:
         
         show_n = 5
         if len(customers)>show_n: 
-
             show_n = 'nan'
             while not show_n.isdigit():
                 show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
