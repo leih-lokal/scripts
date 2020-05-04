@@ -73,6 +73,7 @@ class Customer:
     lastname: str
     firstname: str
     registration_date: datetime.date
+    renewed_on: str
     remark: str
     subscribed_to_newsletter: bool
     email: str
@@ -153,7 +154,7 @@ class Store:
     @classmethod
     def parse(cls, sheet: pe.Book) -> 'Store':
         store = Store({}, [], {})
-        store.customers = {row[0]: Customer(*row[:12]) for row in sheet.Kunden.array if isinstance(row[0], int)
+        store.customers = {row[0]: Customer(*row[:13]) for row in sheet.Kunden.array if isinstance(row[0], int)
                           and len(row[2].strip()) > 0}
         store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if isinstance(row[0], int)
                           and len(row[1].strip()) > 0}
@@ -279,8 +280,8 @@ class Store:
         customers = self.get_customers_for_deletion()
         print(f'{len(customers)} Kunden gefunden die seit 356 Tagen nichts geliehen haben.')
         
-        # customers_reminded_id = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung')
-        # customers_reminded_ids = [c.id for c in customers_reminded_id]
+        #customers_reminded_id = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung')
+        #customers_reminded_ids = [c.id for c in customers_reminded_id]
         show_n = 10
         if len(customers)>10: 
             show_n = 'nan'
@@ -363,7 +364,14 @@ if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
     store = Store.parse_file(excel_file)
     # store.plot_statistics()
-    # store.send_notifications_for_customer_return_rental()
-    store.send_notification_for_customers_on_deletion()
+    answer = input('Erinnerungen für Versäumnis vorbereiten? (J/N) ')
+    if 'J' in answer.upper():
+        try: store.send_notifications_for_customer_return_rental()
+        except Exception as e: print(e)
+    answer = input('Kunden zur Löschung  anzeigen? (J/N) ')
+    if 'J' in answer.upper():
+        try: store.send_notification_for_customers_on_deletion()
+        except Exception as e: print(e)
 
     self=store # debugging made easier
+    input('Fertig!')
