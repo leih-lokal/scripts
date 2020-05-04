@@ -4,8 +4,6 @@
 """
 
 Ideas for statistic:
-    - average rentals/day/month, chart/graph
-    - bussiest day
     - average items rented at any moment
     - how many people, how many items
     - items: how often
@@ -24,6 +22,7 @@ from typing import List, Dict, Callable, Optional
 import mailbox
 from email.header import decode_header
 import json
+import traceback
 import urllib.parse
 from tqdm import tqdm
 
@@ -73,6 +72,7 @@ class Customer:
     lastname: str
     firstname: str
     registration_date: datetime.date
+    renewed_on: datetime.date
     remark: str
     subscribed_to_newsletter: bool
     email: str
@@ -84,7 +84,16 @@ class Customer:
     rentals: List['Rental'] = field(default_factory=list, repr=False)
 
     def last_contractual_interaction(self) -> datetime.date:
-        return max([self.registration_date if self.registration_date else datetime.date.fromtimestamp(0)] + [rental.rented_on for rental in self.rentals])
+        try:
+            registration = self.registration_date if self.registration_date else datetime.date.fromtimestamp(0)
+            renewed = self.renewed_on if self.renewed_on else  registration
+            rental = [rental.rented_on for rental in self.rentals]
+            date =  max(rental + [registration, renewed])
+        except Exception as e:
+            traceback.print_exc()
+            print(e)
+            return registration
+        return date
 
     def short(self) -> str:
         return f'{self.firstname} {self.lastname} ({self.id})'
@@ -153,7 +162,7 @@ class Store:
     @classmethod
     def parse(cls, sheet: pe.Book) -> 'Store':
         store = Store({}, [], {})
-        store.customers = {row[0]: Customer(*row[:12]) for row in sheet.Kunden.array if isinstance(row[0], int)
+        store.customers = {row[0]: Customer(*row[:13]) for row in sheet.Kunden.array if isinstance(row[0], int)
                           and len(row[2].strip()) > 0}
         store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if isinstance(row[0], int)
                           and len(row[1].strip()) > 0}
@@ -170,7 +179,7 @@ class Store:
         """doesnt actually send, just opens the mail program with the template"""
         customer = self.customers.get(customer.id, f'Name for {customer.id} not found')
         body = get_deletion_template(customer)
-        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 356 Tagen.'
+        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 365 Tagen.'
         recipient = customer.email
 
         if not '@' in recipient: 
@@ -192,7 +201,7 @@ class Store:
         webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
         return 
 
-    def get_recently_sent_reminders(self, pattern='[leih.lokal] Erinnerung') -> None:
+    def get_recently_sent_reminders(self, pattern='[leih.lokal] Erinnerung', cutoff_days=10) -> None:
 
         mboxfile = settings['thunderbird-profile']
         sent = mailbox.mbox(mboxfile)
@@ -222,10 +231,11 @@ class Store:
                 except: subject = str(subject)
             
             # do not send reminder if last one has been sent within the last 10 days
-            if pattern in subject and diff.days<10:
+            if pattern in subject and diff.days<cutoff_days:
                 filter = lambda c: c.email==to
                 customers = self.filter_customers(filter)
                 customer = customers[0]
+                customer.last_deletion_reminder = date
                 customers_reminded.append(customer)
                 if len(customers)>1: 
                     print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
@@ -239,6 +249,7 @@ class Store:
                 if filter:
                     filtered.append(customer)
             except Exception as e:
+                traceback.print_exc()
                 print(f'Error filtering customer {customer}: {e}')
         return filtered
     
@@ -250,6 +261,7 @@ class Store:
                 if filter:
                     filtered.append(rental)
             except Exception as e:
+                traceback.print_exc()
                 print(f'Error filtering rental {rental}: {e}')
         return filtered
     
@@ -277,12 +289,17 @@ class Store:
         print('#'*25)
         print('Suche nach Mitgliedern die geloescht werden müssen')
         customers = self.get_customers_for_deletion()
-        print(f'{len(customers)} Kunden gefunden die seit 356 Tagen nichts geliehen haben.')
+        print(f'{len(customers)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
         
-        # customers_reminded_id = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung')
-        # customers_reminded_ids = [c.id for c in customers_reminded_id]
-        show_n = 10
-        if len(customers)>10: 
+        already_sent = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
+        customers = [c for c in customers if c not in already_sent]
+        # this list has all kunden which did not respons within 10 days.
+        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>-1]
+        
+        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert \n{len(to_delete)} haben sich nach 10 Tagen nicht gemeldet und koennen geloescht werden.')
+        
+        show_n = 5
+        if len(customers)>show_n: 
             show_n = 'nan'
             while not show_n.isdigit():
                 show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
@@ -301,35 +318,53 @@ class Store:
         if len(customers)>show_n: 
             printed = '\n'
             for customer in customers:
-                customer = self.customers[customer.id]
+                customer = self.customers.get(int(customer.id), f'NOT FOUND: {customer.id}')
                 printed += f'{customer} \n'
            
             print(f'\n\nDie restlichen sind:\n{printed}\n\nBitte verschicke'
                   ' die eMails und lasse das Script erneut laufen.')
+        print(f'Die folgenden Kunden haben sich 10 Tage nicht gemeldet und koennen geloescht werden:\n' + 
+              '\n'.join([str(c) for c in to_delete]))
         return False
     
     def send_notifications_for_customer_return_rental(self) -> bool:
         print('#'*25)
         print('Suche nach überschrittenen Ausleihfristen')
         rentals_overdue = self.get_overdue_reminders()
-        customers_reminded = self.get_recently_sent_reminders()
-        print(f'{len(rentals_overdue)} überfällige Ausleihen gefunden.')
+        customers_reminded_ids = [c.id for c in self.get_recently_sent_reminders()]
+        
 
-        customers_reminded_ids = [c.id for c in customers_reminded]
-        for rental in rentals_overdue[:10]:
+        rentals = [r for r in rentals_overdue if r.customer_id not in customers_reminded_ids]
+        rentals_reminded = len([r for r in rentals_overdue if r.customer_id  in customers_reminded_ids])
+        print(f'{len(rentals_overdue)} überfällige Ausleihen gefunden. ({rentals_reminded} schon erinnert.)')
+        show_n = 5
+        if len(rentals)>show_n: 
+            show_n = 'nan'
+            while not show_n.isdigit():
+                show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
+                               f'Zahl eintippen und mit <enter> bestaetigen.\n')
+                if show_n=='': 
+                    print('abgebrochen...')
+                    return
+                if not show_n.isdigit() or int(show_n)<1:
+                    print('Muss eine Zahl sein.')
+            show_n = int(show_n)
+
+        for rental in rentals[:show_n]:
             if not rental.customer_id in customers_reminded_ids: 
                 self.send_reminder(rental)
             
-        if len(rentals_overdue)>10: 
+        if len(rentals_overdue)>show_n: 
             printed = '\n'
-            for rental in rentals_overdue:
-                customer = self.customers[rental.customer_id]
+            for rental in rentals_overdue[show_n:]:
+                customer = self.customers.get(int(rental.customer_id))
                 printed += f'customer {rental.customer_id} ({customer.firstname} {customer.lastname}): item {rental.item_id} (rental.item_name) on {rental.to_return_on}\n'
            
-            print(f'\n\nEs gibt {len(rentals_overdue)} Loescherinnerungen zu senden. '\
-                   f'Nur die ersten 10 werden automatisch erstellt. \nDer rest ist: \n' + printed + 
-                   f'\n\n Ende der Liste. Nachdem die Mails geschickt wurden kann das '
-                   f'Script erneut ausgeführt werden und die nächsten 10 werden erzeugt.')
+            print(f'\n\n{len(rentals_overdue)} Gegenstände sind insgesamt überfällig.\n'\
+                   f'Noch {len(rentals_overdue)-rentals_reminded} Loescherinnerungen sind zu senden.\n'\
+                   f'Nur die ersten {show_n} werden automatisch erstellt. \nDer Rest ist: \n' + printed + 
+                   f'\n\nEnde der Liste. Nachdem die Mails geschickt wurden kann das '
+                   f'Script erneut ausgeführt werden und die nächsten {show_n} werden erzeugt.')
         return True
     
     def plot_statistics(self):
@@ -351,19 +386,26 @@ class Store:
         plt.hist(returned)
         plt.title('Rückgabe pro Tag')
 
-def notify(title: str, text: str, timeout: int = 120, with_blocking_popup: bool = False):
-    import plyer
-    plyer.notification.notify(title=title, message=text, timeout=timeout, app_name='leihladen.py')
-    if with_blocking_popup:
-        import pymsgbox
-        pymsgbox.alert(text, title, button='Zur Kenntnis genommen')
-
 
 if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
+    print('Lade Datenbank...')
     store = Store.parse_file(excel_file)
     # store.plot_statistics()
-    # store.send_notifications_for_customer_return_rental()
-    store.send_notification_for_customers_on_deletion()
-
+    answer = input('Versäumniserinnerungen vorbereiten? (J/N) ')
+    if 'J' in answer.upper():
+        try:
+            store.send_notifications_for_customer_return_rental()
+        except Exception as e:
+            traceback.print_exc()
+            print(e)
+            
+    answer = input('Kundenloeschung nach 365 Tagen vorbereiten? (J/N) ')
+    if 'J' in answer.upper():
+        try:
+            store.send_notification_for_customers_on_deletion()
+        except Exception as e:
+            traceback.print_exc()
+            print(e)
     self=store # debugging made easier
+    input('Fertig.')

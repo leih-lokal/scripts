@@ -10,18 +10,15 @@ xxx
 @author: skjerns
 """
 import datetime
-from leihladen import Store
+from leihlokal import Store
 import os, sys
 import numpy as np
 import time
-import pyexcel as pe
 import json
 import urllib.parse
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from geopy.geocoders import Nominatim
-import urllib
-import simplejson
 import string
 import random
 import pandas as pd
@@ -173,12 +170,22 @@ if __name__ == '__main__':
     plt.xticks(np.arange(0,n_days, 30), np.arange(0,n_days))    
     
     
-    #%%
-    plt.figure()
-    rentals = store.rentals
-    months = [str(r.rented_on.month)+'/'+str(r.rented_on.year-2000) for r in rentals]
-    plt.hist(months)
-    plt.title('Ausleihen pro Monat')
+    #%% Ausleihen pro Monat  
+    dates = [r.rented_on for r in store.rentals]
+    # remove dates that are not opening dates
+    dates = [d for d in dates if d.weekday() in [0, 3,4,5]]
+
+    df = pd.DataFrame(dates, columns=['date']).astype('datetime64')
+    df.groupby([df["date"].dt.year, df["date"].dt.month]).count().plot(kind="bar")
+    plt.title('Ausleihen über die Zeit verteilt')
     plt.xlabel('Monat')
     plt.ylabel('Anzahl Ausleihen in diesem Monat')
-
+    
+    #%%
+    fig, axs = plt.subplots(2,1)
+    ax = axs.flatten()[0]
+    df.groupby(df["date"].dt.dayofweek).count().plot(kind="bar", ax=ax)
+    ax.set_xticklabels(['Monatg', 'Donnerstag', 'Freitag', 'Samstag'])
+    ax.set_title('Ausleihen pro Tag')
+    ax.set_xlabel('Tag')
+    ax.set_ylabel('Anzahl Ausleihen in diesem Tag')
