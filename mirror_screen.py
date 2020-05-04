@@ -137,7 +137,7 @@ def client(host='127.0.0.1', port=5089):
         res = [int(x) for x in custom_res.split(',')]
     else:
         res = (0, 0)
-    screen = pygame.display.set_mode((800,600))
+    screen = pygame.display.set_mode(res)
     watching = True    
 
     sock = socket()
@@ -210,7 +210,7 @@ def main():
 
 if __name__ == '__main__':
     ## SETTINGS ##
-    os.environ['SDL_VIDEO_WINDOW_POS'] = "{},0".format(GetSystemMetrics(76)) # uncomment to display window first in primary screen
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "{},0".format(GetSystemMetrics(76)) # comment to display window on primary screen
     os.environ['SCREEN_BLACK'] = '0' # change this to make the screen black instead of keeping last image
     os.environ['SLEEP_BETWEEN'] = '0.2' # change this to reduce CPU usage
     # os.environ['SECOND_MONITOR_RESOLUTION'] = '800,600'  # set this to force another resolution

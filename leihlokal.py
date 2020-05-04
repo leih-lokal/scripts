@@ -72,7 +72,11 @@ class Customer:
     lastname: str
     firstname: str
     registration_date: datetime.date
+<<<<<<< HEAD
     renewed_on: datetime.date
+=======
+    renewed_on: str
+>>>>>>> ac418c961ed094d240c3bc5d7dcda52fcd539988
     remark: str
     subscribed_to_newsletter: bool
     email: str
@@ -291,6 +295,7 @@ class Store:
         customers = self.get_customers_for_deletion()
         print(f'{len(customers)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
         
+<<<<<<< HEAD
         already_sent = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
         customers = [c for c in customers if c not in already_sent]
         # this list has all kunden which did not respons within 10 days.
@@ -300,6 +305,12 @@ class Store:
         
         show_n = 5
         if len(customers)>show_n: 
+=======
+        #customers_reminded_id = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung')
+        #customers_reminded_ids = [c.id for c in customers_reminded_id]
+        show_n = 10
+        if len(customers)>10: 
+>>>>>>> ac418c961ed094d240c3bc5d7dcda52fcd539988
             show_n = 'nan'
             while not show_n.isdigit():
                 show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
@@ -392,6 +403,7 @@ if __name__ == '__main__':
     print('Lade Datenbank...')
     store = Store.parse_file(excel_file)
     # store.plot_statistics()
+<<<<<<< HEAD
     answer = input('Versäumniserinnerungen vorbereiten? (J/N) ')
     if 'J' in answer.upper():
         try:
@@ -409,3 +421,16 @@ if __name__ == '__main__':
             print(e)
     self=store # debugging made easier
     input('Fertig.')
+=======
+    answer = input('Erinnerungen für Versäumnis vorbereiten? (J/N) ')
+    if 'J' in answer.upper():
+        try: store.send_notifications_for_customer_return_rental()
+        except Exception as e: print(e)
+    answer = input('Kunden zur Löschung  anzeigen? (J/N) ')
+    if 'J' in answer.upper():
+        try: store.send_notification_for_customers_on_deletion()
+        except Exception as e: print(e)
+
+    self=store # debugging made easier
+    input('Fertig!')
+>>>>>>> ac418c961ed094d240c3bc5d7dcda52fcd539988
