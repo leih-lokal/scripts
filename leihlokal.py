@@ -87,11 +87,14 @@ class Customer:
         try:
             registration = self.registration_date if self.registration_date else datetime.date.fromtimestamp(0)
             renewed = self.renewed_on if self.renewed_on else  registration
-            rental = [rental.rented_on for rental in self.rentals]
-            date =  max(rental + [registration, renewed])
+            rented = [rental.rented_on for rental in self.rentals]
+            returned = [rental.returned_on for rental in self.rentals]
+            all_dates = rented + returned + [registration, renewed]
+            all_dates = [d if type(d) is datetime.date else d.date() for d in all_dates if not isinstance(d, str)]
+            date =  max(all_dates)
         except Exception as e:
             traceback.print_exc()
-            print(e)
+            print(self, e)
             return registration
         return date
 
@@ -125,9 +128,9 @@ class Rental:
     item_id: int
     item_name: str
 
-    rented_on: datetime.datetime
-    extended_on: datetime.datetime
-    to_return_on: datetime.datetime
+    rented_on: datetime.date
+    extended_on: datetime.date
+    to_return_on: datetime.date
     passing_out_employee: str
     customer_id: int
     name: str
@@ -162,13 +165,14 @@ class Store:
     @classmethod
     def parse(cls, sheet: pe.Book) -> 'Store':
         store = Store({}, [], {})
-        store.customers = {row[0]: Customer(*row[:13]) for row in sheet.Kunden.array if isinstance(row[0], int)
+        store.customers = {row[0]: Customer(*row[:13]) for row in sheet.Kunden.array if str(row[0]).isdigit()
                           and len(row[2].strip()) > 0}
-        store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if isinstance(row[0], int)
+        store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if str(row[0]).isdigit()
                           and len(row[1].strip()) > 0}
         for row in sheet.Leihvorgang.array:
-            if isinstance(row[0], int):
-                customer = store.customers.get(row[6], None)
+            if str(row[6]).isdigit():
+                
+                customer = store.customers.get(int(row[6]), None)
                 rental = Rental(*row[:15], customer=customer)
                 if customer is not None:
                     customer.rentals.append(rental)
@@ -179,7 +183,7 @@ class Store:
         """doesnt actually send, just opens the mail program with the template"""
         customer = self.customers.get(customer.id, f'Name for {customer.id} not found')
         body = get_deletion_template(customer)
-        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 365 Tagen ({customer.id}).'
+        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 365 Tagen (Kunden-Nr. {customer.id}).'
         recipient = customer.email
 
         if not '@' in recipient: 
@@ -201,7 +205,7 @@ class Store:
         webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
         return 
 
-    def get_recently_sent_reminders(self, pattern='[leih.lokal] Erinnerung', cutoff_days=10) -> None:
+    def get_recently_sent_reminders(self, pattern='[leih.lokal] Erinnerung', cutoff_days=7) -> None:
 
         mboxfile = settings['thunderbird-profile']
         sent = mailbox.mbox(mboxfile)
@@ -222,8 +226,8 @@ class Store:
             if not subject: continue
             subject = decode_header(subject)[0][0]
             datestr = message.get('Date')[:16].strip()
-            date = datetime.datetime.strptime(datestr, '%a, %d %b %Y')
-            diff = datetime.datetime.now() - date
+            date = datetime.datetime.strptime(datestr, '%a, %d %b %Y').date()
+            diff = datetime.datetime.now().date() - date
             
 
             if not isinstance(subject, str) and subject: 
@@ -290,15 +294,15 @@ class Store:
         print('#'*25)
         print('Suche nach Mitgliedern die geloescht werden müssen')
         customers = self.get_customers_for_deletion()
-        print(f'{len(customers)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
         
         already_sent = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
         customers = [c for c in customers if c not in already_sent]
         customers = [c for c in customers if not (c.lastname=='' and c.firstname=='')]
         # this list has all kunden which did not respons within 10 days.
-        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>10]
-        
-        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert \n{len(to_delete)} haben sich nach 10 Tagen nicht gemeldet und koennen geloescht werden.')
+        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>7]
+        print(f'{len(customers)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
+
+        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
         
         show_n = 5
         if len(customers)>show_n: 
@@ -325,7 +329,7 @@ class Store:
            
             print(f'\n\nDie restlichen sind:\n{printed}\n\nBitte verschicke'
                   ' die eMails und lasse das Script erneut laufen.')
-        print(f'Die folgenden Kunden haben sich 10 Tage nicht gemeldet und koennen geloescht werden:\n' + 
+        print(f'Die folgenden Kunden haben sich 7 Tage nicht gemeldet und koennen geloescht werden:\n' + 
               '\n'.join([str(c) for c in to_delete]))
         return False
     
