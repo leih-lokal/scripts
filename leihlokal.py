@@ -179,7 +179,7 @@ class Store:
         """doesnt actually send, just opens the mail program with the template"""
         customer = self.customers.get(customer.id, f'Name for {customer.id} not found')
         body = get_deletion_template(customer)
-        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 365 Tagen.'
+        subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach 365 Tagen ({customer.id}).'
         recipient = customer.email
 
         if not '@' in recipient: 
@@ -234,9 +234,10 @@ class Store:
             if pattern in subject and diff.days<cutoff_days:
                 filter = lambda c: c.email==to
                 customers = self.filter_customers(filter)
-                customer = customers[0]
-                customer.last_deletion_reminder = date
-                customers_reminded.append(customer)
+                if len(customers)==1:
+                    customer = customers[0]
+                    customer.last_deletion_reminder = date
+                    customers_reminded.append(customer)
                 if len(customers)>1: 
                     print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
         return customers_reminded
@@ -295,7 +296,7 @@ class Store:
         customers = [c for c in customers if c not in already_sent]
         customers = [c for c in customers if not (c.lastname=='' and c.firstname=='')]
         # this list has all kunden which did not respons within 10 days.
-        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>-1]
+        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>10]
         
         print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert \n{len(to_delete)} haben sich nach 10 Tagen nicht gemeldet und koennen geloescht werden.')
         
