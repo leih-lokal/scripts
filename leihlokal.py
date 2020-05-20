@@ -119,6 +119,7 @@ class Item:
     package: str
     added: datetime.date
     properties: str
+    n_rented:int = 0
     def __repr__(self):
         return f'{self.item_id}: {self.item_name} ({self.deposit}€)'
     
@@ -142,6 +143,7 @@ class Rental:
     deposit_retainment_reason: str
     remark: str
     customer: Optional[Customer] = field(repr=False)
+    
 
     def __repr__(self):
         return f'customer {self.customer_id} -> item {self.item_id}: {self.rented_on} -> {self.to_return_on}'
@@ -169,11 +171,13 @@ class Store:
                           and len(row[2].strip()) > 0}
         store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if str(row[0]).isdigit()
                           and len(row[1].strip()) > 0}
+            
         for row in sheet.Leihvorgang.array:
             if str(row[6]).isdigit():
-                
                 customer = store.customers.get(int(row[6]), None)
                 rental = Rental(*row[:15], customer=customer)
+                if rental.item_id in store.items:
+                    store.items[rental.item_id].n_rented += 1
                 if customer is not None:
                     customer.rentals.append(rental)
                 store.rentals.append(rental)
