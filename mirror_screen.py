@@ -214,7 +214,13 @@ if __name__ == '__main__':
     os.environ['SCREEN_BLACK'] = '0' # change this to make the screen black instead of keeping last image
     os.environ['SLEEP_BETWEEN'] = '0.2' # change this to reduce CPU usage
     # os.environ['SECOND_MONITOR_RESOLUTION'] = '800,600'  # set this to force another resolution
-    main()
+    for i in range(25):
+        try:
+            main()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            pass
     
     
     
