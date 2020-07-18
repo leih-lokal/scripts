@@ -138,7 +138,7 @@ class Rental:
     deposit: int
     deposit_returned: int
     returned_on: datetime.date
-    receiving_employee: datetime.date
+    receiving_employee: str
     deposit_retained: int
     deposit_retainment_reason: str
     remark: str
