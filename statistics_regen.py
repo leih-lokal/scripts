@@ -10,17 +10,9 @@ import sys, os
 import json
 from leihlokal import Store
 import matplotlib.pyplot as plt
-import numpy as np
-from tqdm import tqdm
-import openweather
 import pandas as pd
-import requests
-from datetime import timedelta, datetime
+from datetime import  datetime
 
-import csv
-import codecs
-import urllib.request
-import sys
 
 
 def isfloat(string):
@@ -62,7 +54,7 @@ for rental in rentals:
         day = weather[date]
         day['customers'].add(customer)
     except:
-        print(date)
+        print('fehlt:', date)
 
 for day in weather.copy():
     if weather[day]['customers']==set():
@@ -71,3 +63,9 @@ for day in weather.copy():
         weather[day]['customers'] = len(weather[day]['customers'])
 
 
+df = pd.DataFrame(weather).T
+for measurement in list(df):
+    plt.figure()
+    plt.scatter(df[measurement], df['customers'])
+    plt.xlabel(measurement)
+    plt.ylabel('# Kunden')
