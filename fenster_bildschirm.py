@@ -53,33 +53,6 @@ def get_page_numbers():
 def jpg2int(jpg_bytes):
     return misc.imread(io.BytesIO(jpg_bytes))
 
-# this is the url that we use to fetch the
-n_pages = get_page_numbers()
-request_urls = [sortiment_url + str(i) for i in range(1, n_pages+1)]
-
-# we request 8 pages at once and then 200ms delay
-res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls))
-
-
-# get all <li> tags that are of class 'product'
-products = []
-for page in res:
-    soup = BeautifulSoup(page.content, 'html.parser')
-    products += soup.find_all('li', attrs={'class':'product'})
-
-# extract names, urls and image-urls
-names = [p.find_all('h2')[0].text for p in products]
-urls = [p.a.attrs['href'] for p in products]
-images_urls = [p.a.img.attrs['srcset'].split(', ')[-1].split(' ')[0] for p in products]
-images_urls = ['-'.join(url.split('-')[:-1])+url[-4:] if 'x' in url else url for url in images_urls]
-codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
-    
-# now download the images, store them.
-# poor webserver, we download everything in batches of 100. should be quite fast.
-images = Parallel(n_jobs=8, prefer='threads')(
-        delayed(download_image)(url, code) for url, code in tqdm(list(zip(images_urls, codes))))
-
-products_mapping = {code:name for code, name in zip(codes, names)}
 
 
 # Start creating the power point slides.
@@ -153,21 +126,53 @@ def make_slide(code):
     hours = slide.shapes.add_picture(file, width//66, 0, width = 0.9*((prs.slide_width - image.width) // 2))
     hours.left  = (prs.slide_width//2 + image.width//2)+width//66
     hours.top = image.top+image.height-hours.height
+
+def get_leihlokaldata():
+    # this is the url that we use to fetch the
+    n_pages = get_page_numbers()
+    request_urls = [sortiment_url + str(i) for i in range(1, n_pages+1)]
+    
+    # we request 8 pages at once and then 200ms delay
+    res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls, desc='downloading info'))
     
     
-
-# approximately the display size
-width = Cm(33)
-height = Cm(20)
-prs = Presentation()
-prs.slide_width = width
-prs.slide_height = height
-
-for code in tqdm(codes, desc='writing pptx'):
-    # for all items: create a slide.
-    make_slide(code)
+    # get all <li> tags that are of class 'product'
+    products = []
+    for page in res:
+        soup = BeautifulSoup(page.content, 'html.parser')
+        products += soup.find_all('li', attrs={'class':'product'})
     
-prs.save('raspberry-pi-fenster.pptx')
-
-# now open it
-os.startfile( os.path.abspath('raspberry-pi-fenster.pptx'))
+    # extract names, urls and image-urls
+    names = [p.find_all('h2')[0].text for p in products]
+    urls = [p.a.attrs['href'] for p in products]
+    images_urls = [p.a.img.attrs['srcset'].split(', ')[-1].split(' ')[0] for p in products]
+    images_urls = ['-'.join(url.split('-')[:-1])+url[-4:] if 'x' in url else url for url in images_urls]
+    codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
+    return names, codes, urls,  images_urls
+    
+if __name__ == '__main__':
+        
+    names, codes, urls, images_urls = get_leihlokaldata()
+        
+    # now download the images, store them.
+    # poor webserver, we download everything in batches of 100. should be quite fast.
+    images = Parallel(n_jobs=8, prefer='threads')(
+            delayed(download_image)(url, code) for url, code in tqdm(list(zip(images_urls, codes))))
+    
+    products_mapping = {code:name for code, name in zip(codes, names)}
+    
+    # approximately the display size
+    width = Cm(33)
+    height = Cm(20)
+    prs = Presentation()
+    prs.slide_width = width
+    prs.slide_height = height
+    
+    for code in tqdm(codes, desc='writing pptx'):
+        # for all items: create a slide.
+        make_slide(code)
+        
+    prs.save('raspberry-pi-fenster.pptx')
+    
+    # now open it
+    os.startfile( os.path.abspath('raspberry-pi-fenster.pptx'))
