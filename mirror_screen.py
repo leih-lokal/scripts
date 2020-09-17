@@ -104,7 +104,7 @@ def send_screenshot(conn):
             # Capture the screen
             title = win32gui.GetWindowText (win32gui.GetForegroundWindow())
             if not 'Bürgerstiftung Karlsruhe' in title \
-                or 'WordPress' in title:
+                or 'WordPress' in title or 'Cloud' in title:
                 # COMMENT THIS LINE IN TO DISPLAY A BLACK SCREEN INSTEAD
                 if int(os.environ['SCREEN_BLACK']):
                     img = bytes([0x00] * _WIDTH*_HEIGHT*3)             
