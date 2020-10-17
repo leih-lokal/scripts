@@ -78,7 +78,7 @@ class Customer:
     subscribed_to_newsletter: bool
     email: str
     street: str
-    house_number: int
+    house_number: str # due to 2A etc
     postal_code: int
     city: str
     telephone_number: str
@@ -112,6 +112,7 @@ class Customer:
         """convert to given datatype, if possible"""
         for fieldv in fields(self):
             value = getattr(self, fieldv.name)
+            if not value or value=='-': continue
             try:
                 if isinstance(value, fieldv.type): continue
             except: # cant be type checked, e.g. subscripted generics
@@ -128,9 +129,9 @@ class Item:
     brand: str
     itype: str
     category: str
-    deposit: int
-    parts: int
-    manual: bool
+    deposit: str
+    parts: str
+    manual: str
     package: str
     added: datetime.date
     properties: str
@@ -140,6 +141,7 @@ class Item:
         """convert to given datatype, if possible"""
         for fieldv in fields(self):
             value = getattr(self, fieldv.name)
+            if not value or value=='-': continue
             try:
                 if isinstance(value, fieldv.type): continue
             except: # cant be type checked, e.g. subscripted generics
@@ -161,11 +163,11 @@ class Rental:
     passing_out_employee: str
     customer_id: int
     name: str
-    deposit: int
-    deposit_returned: int
+    deposit: str
+    deposit_returned: str
     returned_on: datetime.date
     receiving_employee: str
-    deposit_retained: int
+    deposit_retained: str
     deposit_retainment_reason: str
     remark: str
     customer: Optional[Customer] = field(repr=False)
@@ -178,6 +180,7 @@ class Rental:
         """convert to given datatype, if possible"""
         for fieldv in fields(self):
             value = getattr(self, fieldv.name)
+            if not value or value=='-': continue
             try:
                 if isinstance(value, fieldv.type): continue
             except: # cant be type checked, e.g. subscripted generics
