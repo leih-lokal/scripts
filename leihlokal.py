@@ -15,7 +15,7 @@ Ideas for statistic:
 import datetime
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 import webbrowser
 import pyexcel as pe
 from typing import List, Dict, Callable, Optional
@@ -24,6 +24,7 @@ from email.header import decode_header
 import json
 import traceback
 import urllib.parse
+from pprint import pprint
 from tqdm import tqdm
 
 
@@ -59,7 +60,7 @@ CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Au
 # in the settings.json we save user-specific variables. the file will never be uploaded to github
 
 
-with open('settings.json', 'r', encoding='latin1') as f:
+with open('settings.json', 'r', encoding='utf-8') as f:
     settings = json.load(f)
 
 ############ END SETTINGS ############################################
@@ -103,8 +104,22 @@ class Customer:
     
     def __repr__(self):
         return f'{self.id}: {self.firstname} {self.lastname} ({self.email}, {self.telephone_number})'
+    
     def __str__(self):
         return f'{self.id}: {self.firstname} {self.lastname} ({self.email}, {self.telephone_number})'
+   
+    def __post_init__(self): 
+        """convert to given datatype, if possible"""
+        for fieldv in fields(self):
+            value = getattr(self, fieldv.name)
+            try:
+                if isinstance(value, fieldv.type): continue
+            except: # cant be type checked, e.g. subscripted generics
+                continue
+            try:
+                setattr(self, fieldv.name, fieldv.type(value))
+            except:
+                print(f"could not convert '{value}'{type(value)} to {fieldv.type} in {repr(self)}")
     
 @dataclass
 class Item:
@@ -120,8 +135,19 @@ class Item:
     added: datetime.date
     properties: str
     n_rented:int = 0
-    def __repr__(self):
-        return f'{self.item_id}: {self.item_name} ({self.deposit}€)'
+    
+    def __post_init__(self): 
+        """convert to given datatype, if possible"""
+        for fieldv in fields(self):
+            value = getattr(self, fieldv.name)
+            try:
+                if isinstance(value, fieldv.type): continue
+            except: # cant be type checked, e.g. subscripted generics
+                continue
+            try:
+                setattr(self, fieldv.name, fieldv.type(value))
+            except:
+                print(f"could not convert '{value}'{type(value)} to {fieldv.type} in {repr(self)}")
     
 @dataclass
 class Rental:
@@ -147,8 +173,19 @@ class Rental:
 
     def __repr__(self):
         return f'customer {self.customer_id} -> item {self.item_id}: {self.rented_on} -> {self.to_return_on}'
-    
-    
+   
+    def __post_init__(self): 
+        """convert to given datatype, if possible"""
+        for fieldv in fields(self):
+            value = getattr(self, fieldv.name)
+            try:
+                if isinstance(value, fieldv.type): continue
+            except: # cant be type checked, e.g. subscripted generics
+                continue
+            try:
+                setattr(self, fieldv.name, fieldv.type(value))
+            except:
+                print(f"could not convert '{value}'{type(value)} to {fieldv.type} in {repr(self)}")
     
 class Store:
 
@@ -167,9 +204,9 @@ class Store:
     @classmethod
     def parse(cls, sheet: pe.Book) -> 'Store':
         store = Store({}, [], {})
-        store.customers = {row[0]: Customer(*row[:13]) for row in sheet.Kunden.array if str(row[0]).isdigit()
+        store.customers = {int(row[0]): Customer(*row[:13]) for row in sheet.Kunden.array if str(row[0]).isdigit()
                           and len(row[2].strip()) > 0}
-        store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if str(row[0]).isdigit()
+        store.items = {int(row[0]): Item(*row[:11]) for row in sheet.Gegenstände.array if str(row[0]).isdigit()
                           and len(row[1].strip()) > 0}
             
         for row in sheet.Leihvorgang.array:
@@ -198,7 +235,7 @@ class Store:
     
     def send_reminder(self, rental: Rental) -> None:
         """doesnt actually send, just opens the mail program with the template"""
-        customer = self.customers.get(rental.customer_id, f'Name for {rental.customer_id} not found')
+        customer = self.customers.get(int(rental.customer_id), f'Name for {rental.customer_id} not found')
         body = get_reminder_template(customer, rental)
         subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
         recipient = customer.email
@@ -274,9 +311,10 @@ class Store:
                 print(f'Error filtering rental {rental}: {e}')
         return filtered
     
-    def get_customers_for_deletion(self, min_full_started_days_since_last_contractual_interaction: int = 365) -> 'Store':
-        filter = lambda c: (datetime.datetime.now().date() - c.last_contractual_interaction()).days\
-            >= min_full_started_days_since_last_contractual_interaction
+    def get_customers_for_deletion(self, days: int = 365) -> 'Store':
+        filter = lambda c: ((datetime.datetime.now().date() - c.last_contractual_interaction()).days\
+            >= 365) if c.registration_date < datetime.date(2020,5,20) else ((datetime.datetime.now().date() - c.last_contractual_interaction()).days\
+            >= 365*2)
         return self.filter_customers(filter)
 
     def get_overdue_reminders(self) -> List[Rental]:
@@ -297,19 +335,21 @@ class Store:
         """
         print('#'*25)
         print('Suche nach Mitgliedern die geloescht werden müssen')
-        customers = self.get_customers_for_deletion()
+        customers_old = self.get_customers_for_deletion()
         
         already_sent = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
-        customers = [c for c in customers if c not in already_sent]
-        customers = [c for c in customers if not (c.lastname=='' and c.firstname=='')]
+        already_sent = [c for c in already_sent if c in customers_old]
+        customers_old = [c for c in customers_old if c not in already_sent]
+        customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
+        
         # this list has all kunden which did not respons within 10 days.
-        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>7]
-        print(f'{len(customers)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
+        to_delete = [c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7]
+        print(f'{len(customers_old)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
 
-        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
+        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert und müssen sich melden \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
         
         show_n = 5
-        if len(customers)>show_n: 
+        if len(customers_old)>show_n: 
             show_n = 'nan'
             while not show_n.isdigit():
                 show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
@@ -321,13 +361,13 @@ class Store:
                     print('Muss eine Zahl sein.')
             show_n = int(show_n)
             
-        for customer in customers[:show_n]:
+        for customer in customers_old[:show_n]:
             # if not rental.customer_id in customers_reminded_ids: 
             self.send_deletion_reminder(customer)
             
-        if len(customers)>show_n: 
+        if len(customers_old)>show_n: 
             printed = '\n'
-            for customer in customers:
+            for customer in customers_old:
                 customer = self.customers.get(int(customer.id), f'NOT FOUND: {customer.id}')
                 printed += f'{customer} \n'
            
@@ -363,6 +403,7 @@ class Store:
         for rental in rentals[:show_n]:
             if not rental.customer_id in customers_reminded_ids: 
                 self.send_reminder(rental)
+
             
         if len(rentals_overdue)>show_n: 
             printed = '\n'
