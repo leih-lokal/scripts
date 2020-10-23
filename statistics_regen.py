@@ -66,6 +66,6 @@ for day in weather.copy():
 df = pd.DataFrame(weather).T
 for measurement in list(df):
     plt.figure()
-    plt.scatter(df[measurement], df['customers'])
+    plt.scatter(df[measurement], df['customers'], alpha=0.2)
     plt.xlabel(measurement)
     plt.ylabel('# Kunden')

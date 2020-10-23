@@ -30,7 +30,7 @@ sns.set(style='whitegrid')
 
 #%%
 
-def get_locations(sheet):
+def get_locations(customers):
 
     class LocationFinder():
         def __init__(self):
@@ -69,31 +69,36 @@ def get_locations(sheet):
                 json.dump(found, f)
             time.sleep(0.1)
             return (latitude, longitude)
-    
-    
-    
-    kunden = sheet.Kunden
-    addressen = list(zip(kunden.column[7], kunden.column[8], kunden.column[9], kunden.column[10]))
-    
+
     locations = []
     finder = LocationFinder()
     t = 1
-    for i, (street, nr, plz, city) in enumerate(tqdm(addressen[1:])):
+    for i, customer in enumerate(tqdm(customers)):
+        nr = customer.house_number
+        street = customer.street
+        city = customer.city
+        plz = customer.postal_code
         while True:
             try:
-                location = finder.get_location(f'{street} {nr} {plz} {city}')
+                address = f'{street} {nr} {plz} {city}'.strip()
+                if address=='': break
+                location = finder.get_location(address)
                 t = 1
                 break
-            except:
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                print(e)
                 t*=2
                 print(f'wait: {t} sec')
                 time.sleep(t)
-                
         if location is None:
             print(street, nr, 'not found')
             continue
         locations.append(location)
     return locations
+
+
 def make_heatmap(locations):
     startingLocation = [49.006239, 8.411572]
     hmap = folium.Map(location=startingLocation, zoom_start=12)
@@ -134,7 +139,7 @@ def plot_(store):
 
 
 
-
+#%%
 if __name__ == '__main__':
     #%% first load the database
     plt.close('all')
@@ -147,45 +152,86 @@ if __name__ == '__main__':
     customers = store.customers.values()
     rentals = store.rentals
     items = store.items.values() 
-  
+
+    #%% create heatmap
+    locations = get_locations(customers)
+    make_heatmap(locations)
+
     #%% Number of customers over the years
     plt.figure()
     first = list(customers)[0].registration_date
     last = list(customers)[-1].registration_date
-    n_days = (last-first).days
-    n_customers = {day:0 for day in np.arange(n_days+1)}
-    for customer in customers:
-        if not isinstance(customer.registration_date, datetime.date): continue
-        i_day = (customer.registration_date - first).days
-        n_customers[i_day] += 1
-    for i in list(n_customers)[1:]:
-        n_customers[i] = n_customers[i-1]+n_customers[i]
-        
-    
-    plt.plot(list(n_customers), list(n_customers.values()))
-    plt.xlabel('Monate nach Eröffnung')
-    plt.ylabel('Anzahl Kunden')
-    plt.plot([0,n_days], [0, n_days],'--',  c='gray', alpha=0.5)
+
+    dates = [c.registration_date for c in customers]
+    x = pd.DataFrame({'dates':dates})
+
+    sns.ecdfplot(data=x, x='dates', stat='count')
+    xlim, ylim = plt.xlim(), plt.ylim()
+    plt.xlim(first, last)
+    plt.plot([*plt.xlim()], [*plt.ylim()],'--',  c='gray', alpha=0.8)
+    plt.xlim(xlim)
+
+    plt.xlabel('Monat', {'fontsize':16})
+    plt.ylabel('Anzahl Kunden', {'fontsize':16})
+
     plt.legend(['Kunden', 'Linearer Anstieg'])
-    plt.xticks(np.arange(0,n_days, 30), np.arange(0,n_days))    
-    
-    
-    #%% Ausleihen pro Monat  
+    plt.title('Zuwachs an Kunden seit Eröffnung', {'fontsize':20})
+    plt.xticks(rotation=25)
+
+    plt.tight_layout()
+
+    #%% Gesamte Anzahl der Ausleihen
+    rentals = [r.rented_on for r in store.rentals if r.rented_on.year >2018]
+
+    first = min(rentals)
+    last =  max(rentals)
+
+    x = pd.DataFrame({'dates':rentals})
+
+    sns.ecdfplot(data=x, x='dates', stat='count')
+    xlim, ylim = plt.xlim(), plt.ylim()
+    plt.xlim(first, last)
+    plt.plot([*plt.xlim()], [*plt.ylim()],'--',  c='gray', alpha=0.8)
+    plt.xlim(xlim)
+
+    plt.xlabel('Monat', {'fontsize':16})
+    plt.ylabel('Gesamte Ausleihen', {'fontsize':16})
+
+    plt.legend(['Ausleihen', 'Linearer Anstieg'])
+    plt.title('Gesamte Anzahl Ausleihen seit Eröffnung', {'fontsize':20})
+    plt.xticks(rotation=25)
+
+
+    plt.tight_layout()
+    #%% Ausleihen pro Monat
     dates = [r.rented_on for r in store.rentals]
-    # remove dates that are not opening dates
+    # dates = pd.DataFrame()
+
+
     dates = [d for d in dates if d.weekday() in [0, 3,4,5]]
 
     df = pd.DataFrame(dates, columns=['date']).astype('datetime64')
     df.groupby([df["date"].dt.year, df["date"].dt.month]).count().plot(kind="bar")
-    plt.title('Ausleihen über die Zeit verteilt')
-    plt.xlabel('Monat')
-    plt.ylabel('Anzahl Ausleihen in diesem Monat')
-    
+    plt.title('Ausleihen über die Zeit verteilt', {'fontsize':20})
+    plt.xlabel('Monat', {'fontsize':16})
+    plt.ylabel('Anzahl Ausleihen in diesem Monat', {'fontsize':16})
+
+    plt.xticks(np.arange(0,int(plt.xlim()[1]),2), rotation=25)
+
+    plt.tight_layout()
+
     #%%
-    fig, axs = plt.subplots(2,1)
-    ax = axs.flatten()[0]
-    df.groupby(df["date"].dt.dayofweek).count().plot(kind="bar", ax=ax)
-    ax.set_xticklabels(['Monatg', 'Donnerstag', 'Freitag', 'Samstag'])
-    ax.set_title('Ausleihen pro Tag')
-    ax.set_xlabel('Tag')
-    ax.set_ylabel('Anzahl Ausleihen in diesem Tag')
+    fig, ax = plt.subplots(1,1)
+    df.groupby(df["date"].dt.dayofweek).count().plot(kind="bar", ax=ax, legend=False)
+    ax.set_xticklabels(['Montag', 'Donnerstag', 'Freitag', 'Samstag'])
+    ax.set_title('Ausleihen pro Tag', {'fontsize':20})
+    ax.set_xlabel('Tag', {'fontsize':16})
+    ax.set_ylabel('Anzahl Ausleihen in diesem Tag', {'fontsize':16})
+    plt.xticks(rotation=25)
+    plt.tight_layout()
+
+    #%% anzahl ausleihen pro kunde
+
+    counts = [len(c.rentals) for c in customers if  len(c.rentals)>0]
+
+    sns.distplot(counts, norm_hist=False, kde=False)
