@@ -26,6 +26,7 @@ import traceback
 import urllib.parse
 from pprint import pprint
 from tqdm import tqdm
+from website import get_leihlokaldata
 
 
 ############ SETTINGS ################################################ 
@@ -325,6 +326,16 @@ class Store:
                             r.to_return_on < datetime.datetime.now().date() and \
                             not isinstance(r.returned_on, datetime.date))
         return self.filter_rentals(filter)
+
+    def check_website_status(self):
+        """
+        A small script that checks whether all items that are not available
+        online are also really rented by people.
+        """
+        products = get_leihlokaldata()
+        for product_online in products:
+            code = product_online['code']
+            product_excel = self.store[code]
 
     def __repr__(self) -> str:
         return f"{len(self.items)}, items {len(self.customers)}, customers {len(self.rentals)} rentals"

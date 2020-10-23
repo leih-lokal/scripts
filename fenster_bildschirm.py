@@ -53,7 +53,28 @@ def get_page_numbers():
 def jpg2int(jpg_bytes):
     return misc.imread(io.BytesIO(jpg_bytes))
 
+def get_leihlokaldata():
+    # this is the url that we use to fetch the
+    n_pages = get_page_numbers()
+    request_urls = [sortiment_url + str(i) for i in range(1, n_pages+1)]
+    
+    # we request 8 pages at once and then 200ms delay
+    res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls, desc='downloading info'))
 
+    # get all <li> tags that are of class 'product'
+    products = []
+    for page in res:
+        soup = BeautifulSoup(page.content, 'html.parser')
+        products += soup.find_all('li', attrs={'class':'product'})
+    
+    # extract names, urls and image-urls
+    names = [p.find_all('h2')[0].text for p in products]
+    urls = [p.a.attrs['href'] for p in products]
+    images_urls = [p.a.img.attrs['srcset'].split(', ')[-1].split(' ')[0] for p in products]
+    images_urls = ['-'.join(url.split('-')[:-1])+url[-4:] if 'x' in url else url for url in images_urls]
+    codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
+
+    return names, codes, urls,  images_urls
 
 # Start creating the power point slides.
 #%%
@@ -127,29 +148,8 @@ def make_slide(code):
     hours.left  = (prs.slide_width//2 + image.width//2)+width//66
     hours.top = image.top+image.height-hours.height
 
-def get_leihlokaldata():
-    # this is the url that we use to fetch the
-    n_pages = get_page_numbers()
-    request_urls = [sortiment_url + str(i) for i in range(1, n_pages+1)]
-    
-    # we request 8 pages at once and then 200ms delay
-    res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls, desc='downloading info'))
-    
-    
-    # get all <li> tags that are of class 'product'
-    products = []
-    for page in res:
-        soup = BeautifulSoup(page.content, 'html.parser')
-        products += soup.find_all('li', attrs={'class':'product'})
-    
-    # extract names, urls and image-urls
-    names = [p.find_all('h2')[0].text for p in products]
-    urls = [p.a.attrs['href'] for p in products]
-    images_urls = [p.a.img.attrs['srcset'].split(', ')[-1].split(' ')[0] for p in products]
-    images_urls = ['-'.join(url.split('-')[:-1])+url[-4:] if 'x' in url else url for url in images_urls]
-    codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
-    return names, codes, urls,  images_urls
-    
+
+#%%
 if __name__ == '__main__':
         
     names, codes, urls, images_urls = get_leihlokaldata()
