@@ -15,7 +15,7 @@ Ideas for statistic:
 import datetime
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 import webbrowser
 import pyexcel as pe
 from typing import List, Dict, Callable, Optional
@@ -24,7 +24,9 @@ from email.header import decode_header
 import json
 import traceback
 import urllib.parse
+from pprint import pprint
 from tqdm import tqdm
+from website import get_leihlokaldata
 
 
 ############ SETTINGS ################################################ 
@@ -59,7 +61,7 @@ CUSTOMER_DELETION_NOTIFICATION_TEXT = """{} sollten manuell gelöscht und die Au
 # in the settings.json we save user-specific variables. the file will never be uploaded to github
 
 
-with open('settings.json', 'r', encoding='latin1') as f:
+with open('settings.json', 'r', encoding='utf-8') as f:
     settings = json.load(f)
 
 ############ END SETTINGS ############################################
@@ -77,7 +79,7 @@ class Customer:
     subscribed_to_newsletter: bool
     email: str
     street: str
-    house_number: int
+    house_number: str # due to 2A etc
     postal_code: int
     city: str
     telephone_number: str
@@ -103,8 +105,23 @@ class Customer:
     
     def __repr__(self):
         return f'{self.id}: {self.firstname} {self.lastname} ({self.email}, {self.telephone_number})'
+    
     def __str__(self):
         return f'{self.id}: {self.firstname} {self.lastname} ({self.email}, {self.telephone_number})'
+   
+    def __post_init__(self): 
+        """convert to given datatype, if possible"""
+        for fieldv in fields(self):
+            value = getattr(self, fieldv.name)
+            if not value or value=='-': continue
+            try:
+                if isinstance(value, fieldv.type): continue
+            except: # cant be type checked, e.g. subscripted generics
+                continue
+            try:
+                setattr(self, fieldv.name, fieldv.type(value))
+            except:
+                print(f"could not convert '{value}'{type(value)} to {fieldv.type} in {repr(self)}")
     
 @dataclass
 class Item:
@@ -113,15 +130,28 @@ class Item:
     brand: str
     itype: str
     category: str
-    deposit: int
-    parts: int
-    manual: bool
+    deposit: str
+    parts: str
+    manual: str
     package: str
     added: datetime.date
     properties: str
     n_rented:int = 0
-    def __repr__(self):
-        return f'{self.item_id}: {self.item_name} ({self.deposit}€)'
+    status:str = 'Ausleihbar'
+
+    def __post_init__(self): 
+        """convert to given datatype, if possible"""
+        for fieldv in fields(self):
+            value = getattr(self, fieldv.name)
+            if not value or value=='-': continue
+            try:
+                if isinstance(value, fieldv.type): continue
+            except: # cant be type checked, e.g. subscripted generics
+                continue
+            try:
+                setattr(self, fieldv.name, fieldv.type(value))
+            except:
+                print(f"could not convert '{value}'{type(value)} to {fieldv.type} in {repr(self)}")
     
 @dataclass
 class Rental:
@@ -135,11 +165,11 @@ class Rental:
     passing_out_employee: str
     customer_id: int
     name: str
-    deposit: int
-    deposit_returned: int
+    deposit: str
+    deposit_returned: str
     returned_on: datetime.date
-    receiving_employee: datetime.date
-    deposit_retained: int
+    receiving_employee: str
+    deposit_retained: str
     deposit_retainment_reason: str
     remark: str
     customer: Optional[Customer] = field(repr=False)
@@ -147,8 +177,20 @@ class Rental:
 
     def __repr__(self):
         return f'customer {self.customer_id} -> item {self.item_id}: {self.rented_on} -> {self.to_return_on}'
-    
-    
+   
+    def __post_init__(self): 
+        """convert to given datatype, if possible"""
+        for fieldv in fields(self):
+            value = getattr(self, fieldv.name)
+            if not value or value=='-': continue
+            try:
+                if isinstance(value, fieldv.type): continue
+            except: # cant be type checked, e.g. subscripted generics
+                continue
+            try:
+                setattr(self, fieldv.name, fieldv.type(value))
+            except:
+                print(f"could not convert '{value}'{type(value)} to {fieldv.type} in {repr(self)}")
     
 class Store:
 
@@ -167,9 +209,9 @@ class Store:
     @classmethod
     def parse(cls, sheet: pe.Book) -> 'Store':
         store = Store({}, [], {})
-        store.customers = {row[0]: Customer(*row[:13]) for row in sheet.Kunden.array if str(row[0]).isdigit()
+        store.customers = {int(row[0]): Customer(*row[:13]) for row in sheet.Kunden.array if str(row[0]).isdigit()
                           and len(row[2].strip()) > 0}
-        store.items = {row[0]: Item(*row[:11]) for row in sheet.Gegenstände.array if str(row[0]).isdigit()
+        store.items = {int(row[0]): Item(*row[:11]) for row in sheet.Gegenstände.array if str(row[0]).isdigit()
                           and len(row[1].strip()) > 0}
             
         for row in sheet.Leihvorgang.array:
@@ -178,8 +220,11 @@ class Store:
                 rental = Rental(*row[:15], customer=customer)
                 if rental.item_id in store.items:
                     store.items[rental.item_id].n_rented += 1
+                    status = 'Ausleihbar' if rental.returned_on else 'Verliehen'
+                    store.items[rental.item_id].status = status
                 if customer is not None:
                     customer.rentals.append(rental)
+
                 store.rentals.append(rental)
         return store
     
@@ -198,7 +243,7 @@ class Store:
     
     def send_reminder(self, rental: Rental) -> None:
         """doesnt actually send, just opens the mail program with the template"""
-        customer = self.customers.get(rental.customer_id, f'Name for {rental.customer_id} not found')
+        customer = self.customers.get(int(rental.customer_id), f'Name for {rental.customer_id} not found')
         body = get_reminder_template(customer, rental)
         subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
         recipient = customer.email
@@ -249,7 +294,20 @@ class Store:
                 if len(customers)>1: 
                     print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
         return customers_reminded
-    
+
+    def filter_items(self, predicate: Callable[[Item], bool]) -> List[Item]:
+        filtered = []
+        for item in self.items.values():
+            try: 
+                filter = predicate(item)
+                if filter:
+                    filtered.append(item)
+            except Exception as e:
+                traceback.print_exc()
+                print(f'Error filtering customer {item}: {e}')
+        return filtered
+
+
     def filter_customers(self, predicate: Callable[[Customer], bool]) -> List[Customer]:
         filtered = []
         for customer in self.customers.values():
@@ -274,9 +332,10 @@ class Store:
                 print(f'Error filtering rental {rental}: {e}')
         return filtered
     
-    def get_customers_for_deletion(self, min_full_started_days_since_last_contractual_interaction: int = 365) -> 'Store':
-        filter = lambda c: (datetime.datetime.now().date() - c.last_contractual_interaction()).days\
-            >= min_full_started_days_since_last_contractual_interaction
+    def get_customers_for_deletion(self, days: int = 365) -> 'Store':
+        filter = lambda c: ((datetime.datetime.now().date() - c.last_contractual_interaction()).days\
+            >= 365) if c.registration_date < datetime.date(2020,5,20) else ((datetime.datetime.now().date() - c.last_contractual_interaction()).days\
+            >= 365*2)
         return self.filter_customers(filter)
 
     def get_overdue_reminders(self) -> List[Rental]:
@@ -284,6 +343,35 @@ class Store:
                             r.to_return_on < datetime.datetime.now().date() and \
                             not isinstance(r.returned_on, datetime.date))
         return self.filter_rentals(filter)
+
+    def check_website_status(self):
+        """
+        A small script that checks whether all items that are not available
+        online are also really rented by people.
+        """
+        products = get_leihlokaldata()
+
+        online_unavailable = [products[key] for key in products.keys() if products[key]['status']=='Verliehen']
+        for product_online in online_unavailable:
+            code = product_online['code']
+            name = product_online['name']
+            product_excel = self.items.get(code)
+            if product_excel:
+                if product_excel.status!=product_online['status']:
+                    print(f'{code} ({name}) ist online auf Verliehen, aber laut Excel auf Lager')
+
+        excel_unavailable = self.filter_items(lambda x:x.status=='Verliehen')
+        for product_excel in excel_unavailable:
+            code = int(product_excel.item_id)
+            name = product_excel.item_name
+            product_online = products.get(code)
+            if product_online:
+                if product_excel.status!=product_online['status']:
+                    print(f'{code} ({name}) ist in Excel verliehen, aber online auf Lager')
+
+    def extended_check_website(self):
+        """run an extended check for data from the website and the excel file"""
+        raise NotImplemented
 
     def __repr__(self) -> str:
         return f"{len(self.items)}, items {len(self.customers)}, customers {len(self.rentals)} rentals"
@@ -297,19 +385,21 @@ class Store:
         """
         print('#'*25)
         print('Suche nach Mitgliedern die geloescht werden müssen')
-        customers = self.get_customers_for_deletion()
+        customers_old = self.get_customers_for_deletion()
         
         already_sent = self.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
-        customers = [c for c in customers if c not in already_sent]
-        customers = [c for c in customers if not (c.lastname=='' and c.firstname=='')]
+        already_sent = [c for c in already_sent if c in customers_old]
+        customers_old = [c for c in customers_old if c not in already_sent]
+        customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
+        
         # this list has all kunden which did not respons within 10 days.
-        to_delete = [c for c in already_sent if (datetime.datetime.now() - c.last_deletion_reminder).days>7]
-        print(f'{len(customers)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
+        to_delete = [c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7]
+        print(f'{len(customers_old)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
 
-        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
+        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert und müssen sich melden \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
         
         show_n = 5
-        if len(customers)>show_n: 
+        if len(customers_old)>show_n: 
             show_n = 'nan'
             while not show_n.isdigit():
                 show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
@@ -321,13 +411,13 @@ class Store:
                     print('Muss eine Zahl sein.')
             show_n = int(show_n)
             
-        for customer in customers[:show_n]:
+        for customer in customers_old[:show_n]:
             # if not rental.customer_id in customers_reminded_ids: 
             self.send_deletion_reminder(customer)
             
-        if len(customers)>show_n: 
+        if len(customers_old)>show_n: 
             printed = '\n'
-            for customer in customers:
+            for customer in customers_old:
                 customer = self.customers.get(int(customer.id), f'NOT FOUND: {customer.id}')
                 printed += f'{customer} \n'
            
@@ -363,6 +453,7 @@ class Store:
         for rental in rentals[:show_n]:
             if not rental.customer_id in customers_reminded_ids: 
                 self.send_reminder(rental)
+
             
         if len(rentals_overdue)>show_n: 
             printed = '\n'
@@ -396,21 +487,27 @@ class Store:
         plt.hist(returned)
         plt.title('Rückgabe pro Tag')
 
-
+#%% main
 if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
     print('Lade Datenbank...')
     store = Store.parse_file(excel_file)
-    # store.plot_statistics()
-    answer = input('Versäumniserinnerungen vorbereiten? (J/N) ')
+
+    # Run status check
+    input('Drücke <ENTER> um den Statuscheck laufen zu lassen.\n')
+    store.check_website_status()
+
+    # Send reminder emails
+    answer = input('Versäumniserinnerungen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notifications_for_customer_return_rental()
         except Exception as e:
             traceback.print_exc()
             print(e)
-            
-    answer = input('Kundenloeschung nach 365 Tagen vorbereiten? (J/N) ')
+
+    # Send customer deletion mails
+    answer = input('Kundenloeschung nach 365 Tagen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notification_for_customers_on_deletion()
