@@ -137,7 +137,8 @@ class Item:
     added: datetime.date
     properties: str
     n_rented:int = 0
-    
+    status:str = 'Ausleihbar'
+
     def __post_init__(self): 
         """convert to given datatype, if possible"""
         for fieldv in fields(self):
@@ -219,8 +220,11 @@ class Store:
                 rental = Rental(*row[:15], customer=customer)
                 if rental.item_id in store.items:
                     store.items[rental.item_id].n_rented += 1
+                    status = 'Ausleihbar' if rental.returned_on else 'Verliehen'
+                    store.items[rental.item_id].status = status
                 if customer is not None:
                     customer.rentals.append(rental)
+
                 store.rentals.append(rental)
         return store
     
@@ -290,7 +294,20 @@ class Store:
                 if len(customers)>1: 
                     print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
         return customers_reminded
-    
+
+    def filter_items(self, predicate: Callable[[Item], bool]) -> List[Item]:
+        filtered = []
+        for item in self.items.values():
+            try: 
+                filter = predicate(item)
+                if filter:
+                    filtered.append(item)
+            except Exception as e:
+                traceback.print_exc()
+                print(f'Error filtering customer {item}: {e}')
+        return filtered
+
+
     def filter_customers(self, predicate: Callable[[Customer], bool]) -> List[Customer]:
         filtered = []
         for customer in self.customers.values():
@@ -333,9 +350,28 @@ class Store:
         online are also really rented by people.
         """
         products = get_leihlokaldata()
-        for product_online in products:
+
+        online_unavailable = [products[key] for key in products.keys() if products[key]['status']=='Verliehen']
+        for product_online in online_unavailable:
             code = product_online['code']
-            product_excel = self.store[code]
+            name = product_online['name']
+            product_excel = self.items.get(code)
+            if product_excel:
+                if product_excel.status!=product_online['status']:
+                    print(f'{code} ({name}) ist online auf Verliehen, aber laut Excel auf Lager')
+
+        excel_unavailable = self.filter_items(lambda x:x.status=='Verliehen')
+        for product_excel in excel_unavailable:
+            code = int(product_excel.item_id)
+            name = product_excel.item_name
+            product_online = products.get(code)
+            if product_online:
+                if product_excel.status!=product_online['status']:
+                    print(f'{code} ({name}) ist in Excel verliehen, aber online auf Lager')
+
+    def extended_check_website(self):
+        """run an extended check for data from the website and the excel file"""
+        raise NotImplemented
 
     def __repr__(self) -> str:
         return f"{len(self.items)}, items {len(self.customers)}, customers {len(self.rentals)} rentals"
@@ -451,21 +487,27 @@ class Store:
         plt.hist(returned)
         plt.title('Rückgabe pro Tag')
 
-
+#%% main
 if __name__ == '__main__':
     excel_file = settings['leihgegenstaendeliste']
     print('Lade Datenbank...')
     store = Store.parse_file(excel_file)
-    # store.plot_statistics()
-    answer = input('Versäumniserinnerungen vorbereiten? (J/N) ')
+
+    # Run status check
+    input('Drücke <ENTER> um den Statuscheck laufen zu lassen.\n')
+    store.check_website_status()
+
+    # Send reminder emails
+    answer = input('Versäumniserinnerungen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notifications_for_customer_return_rental()
         except Exception as e:
             traceback.print_exc()
             print(e)
-            
-    answer = input('Kundenloeschung nach 365 Tagen vorbereiten? (J/N) ')
+
+    # Send customer deletion mails
+    answer = input('Kundenloeschung nach 365 Tagen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notification_for_customers_on_deletion()
