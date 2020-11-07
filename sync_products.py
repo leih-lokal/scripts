@@ -84,13 +84,13 @@ for product in tqdm(products, desc='Adding SKUs'):
 
     updates.append({'id': id, 'short_description':description})
 
-    if len(updates)>25:
-        max(tqdm._instances).set_description('Submitting 25 items')
+    if len(updates)>50:
+        max(tqdm._instances).set_description('Submitting 50 items')
         res = wcapi.put('products/batch', data={'update':updates})
         max(tqdm._instances).set_description('Verifying')
         assert res.status_code==200, 'Status code is not {res}'
         responses = res.json()['update']
-        for i1, i2 in zip(responses, updates[:100]):
+        for i1, i2 in zip(responses, updates):
             assert i1['short_description']==i2['short_description'], 'Not the same in than out'
         updates = []
 
