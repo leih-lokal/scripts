@@ -78,7 +78,7 @@ def get_leihlokaldata():
 #%%
 
 def make_slide(code):
-   
+
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     
     top = height*0.15
@@ -170,8 +170,11 @@ if __name__ == '__main__':
     prs.slide_height = height
     
     for code in tqdm(codes, desc='writing pptx'):
-        # for all items: create a slide.
-        make_slide(code)
+        try:
+            # for all items: create a slide.
+            make_slide(code)
+        except:
+            print("failed to create slide for item " + str(code))
         
     prs.save('raspberry-pi-fenster.pptx')
     
