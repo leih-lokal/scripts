@@ -25,8 +25,6 @@ sortiment_url = 'https://www.buergerstiftung-karlsruhe.de/leihlokal/sortiment/?p
 
 def download_image(url, code):
     file = os.path.join('products', f'{code}.jpg')
-    if not os.path.isdir('products'): 
-        os.makedirs('products')
     c = get(url)
     with open(file, 'wb') as f:
         f.write(c.content)
@@ -74,7 +72,7 @@ def get_leihlokaldata():
     images_urls = ['-'.join(url.split('-')[:-1])+url[-4:] if 'x' in url else url for url in images_urls]
     codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
 
-    return names, codes, urls,  images_urls
+    return names, codes, urls, images_urls
 
 # Start creating the power point slides.
 #%%
@@ -153,6 +151,9 @@ def make_slide(code):
 if __name__ == '__main__':
         
     names, codes, urls, images_urls = get_leihlokaldata()
+
+    if not os.path.isdir('products'):
+        os.makedirs('products')
         
     # now download the images, store them.
     # poor webserver, we download everything in batches of 100. should be quite fast.
