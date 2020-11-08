@@ -14,7 +14,32 @@ collection of scripts to ease the renting process, and to maintaine the organiza
 
     sudo apt-get upgrade && sudo apt-get upgrade
     git clone https://github.com/apache/couchdb.git
+    git clone https://github.com/leih-lokal/leih.lokal.git
     git clone https://github.com/leih-lokal/LeihLokalVerwaltung.git
+
+## Install Slideshow
+
+### Create Slideshow PDF
+
+Create the slideshow on your machine:
+
+    cd leih.lokal
+    pip install -r create_presentation_requirements.txt
+    python create_presentation_for_window.py
+
+Open `raspberry-pi-fenster.pptx` and export it as pdf. Then copy the pdf to `/home/pi/Schreibtisch/raspberry-pi-fenster.pdf` on the raspberry.
+
+### Autostart
+
+On Raspberry
+
+    sudo apt-get install -y okular
+    cd leih.lokal
+    sudo chmod +x start-slideshow.sh
+
+Add the following line to the file `/etc/xdg/lxsession/LXDE-pi/autostart`
+
+    /home/pi/leih.lokal/start-slideshow.sh
 
 ## Install Couchdb
 
