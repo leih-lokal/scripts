@@ -2,6 +2,10 @@
 """
 Created on Thu May 28 20:51:22 2020
 
+With this script I created an HTML file that displayed 
+all items that we had for sale in our flea-market
+
+
 @author: Simon
 """
 import json
