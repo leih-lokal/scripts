@@ -349,8 +349,9 @@ class Store:
         A small script that checks whether all items that are not available
         online are also really rented by people.
         """
+        # some items do not need to be checked, as they are always available (eg Bohrer, Hammer, Zangen)
+        excluded = [427, 602, 915, 1113, 1227, 1811, 4001, 4004, 5002, 5003, 5004, 5005, 5007, 5009, 5023, 5053, 5054, 5055, 5057]
         products = get_leihlokaldata()
-
         online_unavailable = [products[key] for key in products.keys() if products[key]['status']=='Verliehen']
         for product_online in online_unavailable:
             code = product_online['code']
@@ -363,11 +364,13 @@ class Store:
         excel_unavailable = self.filter_items(lambda x:x.status=='Verliehen')
         for product_excel in excel_unavailable:
             code = int(product_excel.item_id)
+            if int(code) in excluded: continue # skip these, as we have them many times
             name = product_excel.item_name
             product_online = products.get(code)
             if product_online:
                 if product_excel.status!=product_online['status']:
                     print(f'{code} ({name}) ist in Excel verliehen, aber online auf Lager')
+        print("Bitte beachte, nicht alle Gegenstände müssen online ausgetragen werden,\n da wir sie mehrfach haben (Bohrer, Wasserwaage, Klemmen, etc.)")
 
     def extended_check_website(self):
         """run an extended check for data from the website and the excel file"""
