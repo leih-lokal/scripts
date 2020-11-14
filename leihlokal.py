@@ -370,7 +370,7 @@ class Store:
             if product_online:
                 if product_excel.status!=product_online['status']:
                     print(f'{code} ({name}) ist in Excel verliehen, aber online auf Lager')
-        print("Bitte beachte, nicht alle Gegenstände müssen online ausgetragen werden,\nda wir sie mehrfach haben (Bohrer, Wasserwaage, Klemmen, Malervlies, etc.)")
+        print("Bitte beachte, nicht alle Gegenstände müssen online ausgetragen werden, \nda wir sie mehrfach haben (Bohrer, Wasserwaage, Klemmen, Malervlies, etc.)")
 
     def extended_check_website(self):
         """run an extended check for data from the website and the excel file"""
