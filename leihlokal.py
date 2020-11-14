@@ -497,11 +497,11 @@ if __name__ == '__main__':
     store = Store.parse_file(excel_file)
 
     # Run status check
-    input('Drücke <ENTER> um den Statuscheck laufen zu lassen.\n')
+    input('\nDrücke <ENTER> um den Statuscheck laufen zu lassen.\n')
     store.check_website_status()
 
     # Send reminder emails
-    answer = input('Versäumniserinnerungen vorbereiten? (J/N)\n')
+    answer = input('\nVersäumniserinnerungen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notifications_for_customer_return_rental()
@@ -510,7 +510,7 @@ if __name__ == '__main__':
             print(e)
 
     # Send customer deletion mails
-    answer = input('Kundenloeschung nach 365 Tagen vorbereiten? (J/N)\n')
+    answer = input('\nKundenlöschung nach 365 Tagen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notification_for_customers_on_deletion()
