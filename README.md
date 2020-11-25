@@ -90,3 +90,15 @@ Enable & Start Service:
     sudo systemctl daemon-reload
     sudo systemctl enable couchdb.service
     sudo systemctl start couchdb.service
+
+## Setup automatic backup to Excel
+
+Install dependencies
+
+    cd ~/LeihLokalVerwaltung/ExcelCouchDbSync
+    pip3 install -r requirements.txt
+    chmod +x backup_to_excel.sh
+
+Schedule cronjob (crontab -e)
+
+    */30 10-20 * * 1,4-6 /home/pi/LeihLokalVerwaltung/ExcelCouchDbSync/backup_to_excel.sh >/dev/null 2>&1
