@@ -510,7 +510,7 @@ if __name__ == '__main__':
             print(e)
 
     # Send customer deletion mails
-    answer = input('\nKundenlöschung nach 365 Tagen vorbereiten? (J/N)\n')
+    answer = input('\nNur durch Lena/Vorstand durchführen: Kundenlöschung nach 365 Tagen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             store.send_notification_for_customers_on_deletion()
