@@ -216,6 +216,7 @@ if __name__ == '__main__':
     plt.xlabel('Monat', {'fontsize':16})
     plt.ylabel('Anzahl Ausleihen in diesem Monat', {'fontsize':16})
 
+    
     plt.xticks(np.arange(0,int(plt.xlim()[1]),2), rotation=25)
 
     plt.tight_layout()

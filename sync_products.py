@@ -3,7 +3,7 @@
 Created on Fri Nov  6 11:52:24 2020
 
 This file is intended to be run to update the products with regards
-to synonyms and product number (SKU) inside the product description.
+to product number (SKU) inside the product description.
 
 @author: Simon
 """
