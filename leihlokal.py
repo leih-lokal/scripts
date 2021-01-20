@@ -4,43 +4,11 @@ Created on Thu Jan 14 18:48:12 2021
 
 @author: Simon
 """
-from tqdm import tqdm
-from datetime import datetime, date
-from cloudant.client import CouchDB
-import urllib
-import json
 import traceback
 import logging as log
-from website import get_leihlokaldata
+from datetime import datetime, date
+from cloudant.client import CouchDB
 
-############ SETTINGS ################################################ 
-def get_reminder_template(customer, rental):
-    rented_on = rental.rented_on.strftime('%d.%m.%Y')
-    to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
-    string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
-             f'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
-             f'Wir möchten Sie daran erinnern, den am {rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
-             f'Der bei uns vermerkte Rückgabetermin war der {to_return_on}.\n\n'\
-             f'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
-             f'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
-             f'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
-             f'Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
-    string = urllib.parse.quote(string)
-    return string
-
-def get_deletion_template(customer):
-    lastinteraction = customer.last_contractual_interaction().strftime('%d.%m.%Y')
-    string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n'\
-             f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr ({lastinteraction}).\n'\
-             f'Aus datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
-             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, antworten Sie bitte kurz auf diese Mail.\n\n'\
-             f'Falls wir keine Antwort erhalten, werden wir Ihre Daten aus dem System entfernen.\n\n'\
-             f'Liebe Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
-    string = urllib.parse.quote(string)
-    return string
-
-with open('settings.json', 'r', encoding='utf-8') as f:
-    settings = json.load(f)
 
 class Object:
     def __init__(self, **kwargs):
@@ -76,20 +44,20 @@ class Customer(Object):
         except Exception as e:
             print(repr(e), str(e))
 
-    def last_contractual_interaction(self):
+    def last_interaction(self):
+        registration = self.registration_date if self.registration_date else date.fromtimestamp(0)
         try:
-            registration = self.registration_date if self.registration_date else date.fromtimestamp(0)
-            renewed = self.renewed_on if self.renewed_on else  registration
+            renewed = self.renewed_on if self.renewed_on else registration
             rented = [rental.rented_on for rental in self.rentals]
-            returned = [rental.returned_on for rental in self.rentals]
+            returned = [rental.returned_on for rental in self.rentals if rental.returned_on]
             all_dates = rented + returned + [registration, renewed]
-            all_dates = [d for d in all_dates if not isinstance(d, str)]
-            date =  max(all_dates)
+            all_dates = [d for d in all_dates if isinstance(d, date)]
+            last = max(all_dates)
         except Exception as e:
             traceback.print_exc()
             print(self, e)
             return registration
-        return date
+        return last
 
 
 class Item(Object):
@@ -174,8 +142,6 @@ class LeihLokal(object):
         for rental in curr_rentals:
             rental.item.status = 'verliehen'
 
-
-
     def filter_items(self, predicate):
         filtered = []
         for item in self.items.values():
@@ -212,28 +178,6 @@ class LeihLokal(object):
                 print(f'Error filtering rental {rental}: {e}')
         return filtered
 
-    def check_website_status(self):
-        """
-        A small script that checks whether all items that are not available
-        online are also really rented by people.
-        """
-        wc_products = get_leihlokaldata()
-
-        unavailable_wc = [wc_products[key] for key in wc_products.keys() if wc_products[key]['status']=='Verliehen']
-        # unavailable_couchdb = self.filter_items(lambda x:x.status_on_website!='outofstock')
-        curr_rentals = self.filter_rentals(lambda x:not x.returned_on)
-
-        for product in unavailable_wc:
-            code = str(product['code']).zfill(4)
-            name = product['name']
-            item = self.items.get(code)
-            if item not in curr_rentals:
-                print(f'{code} {name}: ist online auf "verliehen", aber hat keine Ausleihe')
-
-        for product in curr_rentals:
-            code = int(product.item_id)
-            if not code in unavailable_wc:
-                print(f'{str(code).zfill(4)} {product.item_name}: ist lokal verliehen, aber online "auf Lager"')
 
 
 if __name__=='__main__':

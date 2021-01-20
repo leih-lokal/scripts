@@ -20,7 +20,6 @@ import webbrowser
 import pyexcel as pe
 from typing import List, Dict, Callable, Optional
 import mailbox
-from email.header import decode_header
 import json
 import traceback
 import urllib.parse
