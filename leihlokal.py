@@ -179,8 +179,3 @@ class LeihLokal(object):
         return filtered
 
 
-
-if __name__=='__main__':
-    store = LeihLokal()
-    store.check_website_status()
-

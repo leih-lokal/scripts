@@ -5,6 +5,7 @@ Created on Wed Jan 20 18:31:23 2021
 @author: Simon
 """
 import re
+import traceback
 import datetime
 from website import get_leihlokaldata
 from email.header import decode_header
@@ -47,36 +48,6 @@ def get_deletion_template(customer):
 
 
 ############ FUNCTIONS ################################################
-
-def send_deletion_reminder(store, customer):
-    """doesnt actually send, just opens the mail program with the template"""
-    customer = store.customers.get(customer.id, f'Name for {customer.id} not found')
-    body = get_deletion_template(customer)
-    subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach Inaktivität (Kunden-Nr. {customer.id}).'
-    recipient = customer.email
-
-    if not '@' in recipient: 
-        print(f'Keine Email hinterlegt: {customer}')
-        return
-    webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
-    return 
-
-def send_reminder(store, rental):
-    """
-    send reminders for rental return
-
-    doesnt actually send, just opens the mail program with the template
-    """
-    customer = store.customers.get(int(rental.customer_id), f'Name for {rental.customer_id} not found')
-    body = get_reminder_template(customer, rental)
-    subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
-    recipient = customer.email
-
-    if not '@' in recipient: 
-        print(f'{customer.firstname} {customer.lastname}({customer.id}, rented {rental.item_id}:{rental.item_name}) has no email. Please call manually')
-        return
-    webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
-    return 
 
 def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff_days=7) -> None:
     """Get all customers that have recently received a mail with the given pattern"""
@@ -121,7 +92,7 @@ def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff
                 print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
     return customers_reminded
 
-def send_notifications_for_customer_return_rental(store):
+def send_notifications_for_overdue_rental(store):
     """
     Send reminders to customers when their rental is overdue
     """
@@ -152,13 +123,13 @@ def send_notifications_for_customer_return_rental(store):
 
     for rental in rentals[:show_n]:
         if not rental.customer_id in customers_reminded_ids: 
-            self.send_reminder(rental)
+            send_return_reminder(rental)
 
         
     if len(rentals_overdue)>show_n: 
         printed = '\n'
         for rental in rentals_overdue[show_n:]:
-            customer = self.customers.get(int(rental.customer_id))
+            customer = store.customers.get(int(rental.customer_id))
             printed += f'customer {rental.customer_id} ({customer.firstname} {customer.lastname}): item {rental.item_id} (rental.item_name) on {rental.to_return_on}\n'
        
         print(f'\n\n{len(rentals_overdue)} Gegenstände sind insgesamt überfällig.\n'\
@@ -167,28 +138,118 @@ def send_notifications_for_customer_return_rental(store):
                f'\n\nEnde der Liste. Nachdem die Mails geschickt wurden kann das '
                f'Script erneut ausgeführt werden und die nächsten {show_n} werden erzeugt.')
     return True
+
+def send_notification_for_customers_on_deletion(store):
+        """
+        find all customers that havnt had an interaction with leihlokal
+        for 1 or two years, and send them a question if their data should be
+        deleted.
+        """
+        print('#'*25)
+        print('Suche nach Mitgliedern die geloescht werden müssen')
+
+
+        func = lambda c: ((datetime.datetime.now().date() - c.last_interaction()).days\
+                          >= 365) if c.registration_date < datetime.date(2020,5,20) else \
+                         ((datetime.datetime.now().date() - c.last_interaction()).days >= 365*2)
+        customers_old = store.filter_customers(func)
+
+        already_sent = store.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
+        already_sent = [c for c in already_sent if c in customers_old]
+        customers_old = [c for c in customers_old if c not in already_sent]
+        customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
+        
+        # this list has all kunden which did not respons within 10 days.
+        to_delete = [c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7]
+        print(f'{len(customers_old)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
+
+        print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert und müssen sich melden \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
+        
+        show_n = 5
+        if len(customers_old)>show_n: 
+            show_n = 'nan'
+            while not show_n.isdigit():
+                show_n = input('Für wieviele moechtest du jetzt eine Email erstellen?\n'
+                               'Zahl eintippen und mit <enter> bestaetigen.\n')
+                if show_n=='': 
+                    print('abgebrochen...')
+                    return
+                if not show_n.isdigit() or int(show_n)<1:
+                    print('Muss eine Zahl sein.')
+            show_n = int(show_n)
+            
+        for customer in customers_old[:show_n]:
+            # if not rental.customer_id in customers_reminded_ids: 
+            store.send_deletion_reminder(customer)
+            
+        if len(customers_old)>show_n: 
+            printed = '\n'
+            for customer in customers_old:
+                customer = store.customers.get(int(customer.id), f'NOT FOUND: {customer.id}')
+                printed += f'{customer} \n'
+           
+            print(f'\n\nDie restlichen sind:\n{printed}\n\nBitte verschicke'
+                  ' die eMails und lasse das Script erneut laufen.')
+        print('Die folgenden Kunden haben sich 7 Tage nicht gemeldet und koennen geloescht werden:\n' +
+              '\n'.join([str(c) for c in to_delete]))
+        return False
+
+
+def send_deletion_reminder(store, customer):
+    """doesnt actually send, just opens the mail program with the template"""
+    customer = store.customers.get(customer.id, f'Name for {customer.id} not found')
+    body = get_deletion_template(customer)
+    subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach Inaktivität (Kunden-Nr. {customer.id}).'
+    recipient = customer.email
+
+    if not '@' in recipient: 
+        print(f'Keine Email hinterlegt: {customer}, kann direkt geloescht werden')
+        return
+    webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
+    return 
+
+def send_return_reminder(store, rental):
+    """
+    send reminders for rental return
+
+    doesnt actually send, just opens the mail program with the template
+    """
+    customer = store.customers.get(int(rental.customer_id), f'Name for {rental.customer_id} not found')
+    body = get_reminder_template(customer, rental)
+    subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
+    recipient = customer.email
+
+    if not '@' in recipient: 
+        print(f'{customer.firstname} {customer.lastname}({customer.id}, rented {rental.item_id}:{rental.item_name}) has no email. Please call manually')
+        return
+    webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
+    return 
+
+
+
 def check_website_status(store):
     """
     A small script that checks whether all items that are not available
-    online are also really rented by people.
+    online are also really rented by people and vice versa.
     """
     wc_products = get_leihlokaldata()
 
-    unavailable_wc = [wc_products[key] for key in wc_products.keys() if wc_products[key]['status']=='Verliehen']
+    unavailable_wc = {str(key).zfill(4):wc_products[key] for key in wc_products.keys() if wc_products[key]['status']=='Verliehen'}
     # unavailable_couchdb = self.filter_items(lambda x:x.status_on_website!='outofstock')
-    curr_rentals = store.filter_rentals(lambda x:not x.returned_on)
-
-    for product in unavailable_wc:
-        code = str(product['code']).zfill(4)
-        name = product['name']
+    curr_rental_items = list(set([rental.item for rental in store.filter_rentals(lambda x:not x.returned_on)]))
+    print('------- Online verliehen, aber keine Ausleihe ---------')
+    for code in sorted(unavailable_wc):
+        name = unavailable_wc[code]['name']
         item = store.items.get(code)
-        if item not in curr_rentals:
+        if item is None: print(f'{item} nicht gefunden')
+        if item not in curr_rental_items:
             print(f'{code} {name}: ist online auf "verliehen", aber hat keine Ausleihe')
-
-    for product in curr_rentals:
-        code = int(product.item_id)
+    print('------- Online verfügbar, aber aktive Ausleihe -------')
+    for item in sorted(curr_rental_items, key=lambda x:x.id):
+        code = item.id
         if not code in unavailable_wc:
-            print(f'{str(code).zfill(4)} {product.item_name}: ist lokal verliehen, aber online "auf Lager"')
+            print(f'{code} {item.item_name}: aktive Ausleihe, aber ist online "auf Lager"')
+    print('-'*55)
 
 
 
@@ -201,14 +262,21 @@ if __name__ == '__main__':
 
     # Run status check
     input('Drücke <ENTER> um den Statuscheck laufen zu lassen.\n')
-    store.check_website_status()
+    try:
+        check_website_status(store)
+    except Exception as e:
+        traceback.print_exc()
+        print(e)
 
     # Send reminder emails
-    print('-'*20)
     answer = input('\nVersäumniserinnerungen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
-            store.send_notifications_for_customer_return_rental()
+            send_notifications_for_overdue_rental(store)
+        except FileNotFoundError as e:
+            print('ERROR: Thunderbird mailbox file nicht gefunden?')
+            print('Muss in settings.json angegeben werden.')
+            print(e)
         except Exception as e:
             traceback.print_exc()
             print(e)
@@ -218,9 +286,12 @@ if __name__ == '__main__':
     answer = input('\nKundenloeschung nach 365 Tagen vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
-            store.send_notification_for_customers_on_deletion()
+            send_notification_for_customers_on_deletion(store)
+        except FileNotFoundError as e:
+            print('ERROR: Thunderbird mailbox file nicht gefunden?')
+            print('Muss in settings.json angegeben werden.')
+            print(e)
         except Exception as e:
             traceback.print_exc()
             print(e)
-    self=store # debugging made easier
     input('Fertig.')
