@@ -40,14 +40,14 @@ class Customer(Object):
 
     def __repr__(self):
         try:
-            return f'Customer {self.id} ({self.firstname} {self.lastname}, {self.email}, {self.telephone_number})'
+            return f'Nutzer {self.id} ({self.firstname} {self.lastname}, {self.email}, {self.telephone_number})'
         except Exception as e:
             print(repr(e), str(e))
 
     def last_interaction(self):
         registration = self.registration_date if self.registration_date else date.fromtimestamp(0)
         try:
-            renewed = self.renewed_on if self.renewed_on else registration
+            renewed = self.renewed_on if hasattr(self, 'renewed_on')  else registration
             rented = [rental.rented_on for rental in self.rentals]
             returned = [rental.returned_on for rental in self.rentals if rental.returned_on]
             all_dates = rented + returned + [registration, renewed]

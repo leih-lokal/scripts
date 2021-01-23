@@ -36,7 +36,7 @@ def get_reminder_template(customer, rental):
     return string
 
 def get_deletion_template(customer):
-    lastinteraction = customer.last_contractual_interaction().strftime('%d.%m.%Y')
+    lastinteraction = customer.last_interaction().strftime('%d.%m.%Y')
     string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n'\
              f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr ({lastinteraction}).\n'\
              f'Aus datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
@@ -112,8 +112,8 @@ def send_notifications_for_overdue_rental(store):
     if len(rentals)>show_n: 
         show_n = 'nan'
         while not show_n.isdigit():
-            show_n = input(f'Für wieviele moechtest du jetzt eine Email erstellen?\n'
-                           f'Zahl eintippen und mit <enter> bestaetigen.\n')
+            show_n = input('Für wieviele moechtest du jetzt eine Email erstellen?\n'
+                           'Zahl eintippen und mit <enter> bestaetigen.\n')
             if show_n=='': 
                 print('abgebrochen...')
                 return
@@ -139,6 +139,7 @@ def send_notifications_for_overdue_rental(store):
                f'Script erneut ausgeführt werden und die nächsten {show_n} werden erzeugt.')
     return True
 
+
 def send_notification_for_customers_on_deletion(store):
         """
         find all customers that havnt had an interaction with leihlokal
@@ -154,7 +155,7 @@ def send_notification_for_customers_on_deletion(store):
                          ((datetime.datetime.now().date() - c.last_interaction()).days >= 365*2)
         customers_old = store.filter_customers(func)
 
-        already_sent = store.get_recently_sent_reminders(pattern='[leih.lokal] Löschung', cutoff_days=9999)
+        already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=9999)
         already_sent = [c for c in already_sent if c in customers_old]
         customers_old = [c for c in customers_old if c not in already_sent]
         customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
@@ -180,12 +181,12 @@ def send_notification_for_customers_on_deletion(store):
             
         for customer in customers_old[:show_n]:
             # if not rental.customer_id in customers_reminded_ids: 
-            store.send_deletion_reminder(customer)
+            send_deletion_reminder(customer)
             
         if len(customers_old)>show_n: 
             printed = '\n'
             for customer in customers_old:
-                customer = store.customers.get(int(customer.id), f'NOT FOUND: {customer.id}')
+                customer = store.customers.get(customer.id, f'NOT FOUND: {customer.id}')
                 printed += f'{customer} \n'
            
             print(f'\n\nDie restlichen sind:\n{printed}\n\nBitte verschicke'
@@ -195,26 +196,25 @@ def send_notification_for_customers_on_deletion(store):
         return False
 
 
-def send_deletion_reminder(store, customer):
+def send_deletion_reminder(customer):
     """doesnt actually send, just opens the mail program with the template"""
-    customer = store.customers.get(customer.id, f'Name for {customer.id} not found')
     body = get_deletion_template(customer)
     subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach Inaktivität (Kunden-Nr. {customer.id}).'
     recipient = customer.email
 
     if not '@' in recipient: 
-        print(f'Keine Email hinterlegt: {customer}, kann direkt geloescht werden')
+        print(f'Keine Email: {customer}, direkt löschen.')
         return
     webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
     return 
 
-def send_return_reminder(store, rental):
+def send_return_reminder(rental):
     """
     send reminders for rental return
 
     doesnt actually send, just opens the mail program with the template
     """
-    customer = store.customers.get(int(rental.customer_id), f'Name for {rental.customer_id} not found')
+    customer = rental.customer
     body = get_reminder_template(customer, rental)
     subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
     recipient = customer.email
