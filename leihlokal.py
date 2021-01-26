@@ -178,4 +178,6 @@ class LeihLokal(object):
                 print(f'Error filtering rental {rental}: {e}')
         return filtered
 
-
+    def get_active_rentals(self):
+        func = lambda x: not hasattr(x, 'returned_on') or not x.returned_on
+        return self.filter_rentals(func)
