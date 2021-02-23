@@ -27,7 +27,8 @@ def download_image(url, code):
 
 def get(url, sleep=0.5):
     """retrieve an url and wait some second"""
-    c = requests.get(url)
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+    c = requests.get(url, headers=headers)
     if sleep>5: return c
     time.sleep(sleep)
     if not c.ok:
