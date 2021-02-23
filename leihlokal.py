@@ -140,8 +140,10 @@ class LeihLokal(object):
         # now set correct status according to active rentals
         curr_rentals = self.filter_rentals(lambda x:not x.returned_on )
         for rental in curr_rentals:
-            rental.item.status = 'verliehen'
-
+            try:
+                rental.item.status = 'verliehen'
+            except:
+                print(f'could not set status of {rental}')
     def filter_items(self, predicate):
         filtered = []
         for item in self.items.values():

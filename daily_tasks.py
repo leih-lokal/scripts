@@ -245,13 +245,13 @@ def check_website_status(store):
         if item not in curr_rental_items:
             print(f'{code} {name}: ist online auf "verliehen", aber hat keine Ausleihe')
     print('------- Online verfügbar, aber aktive Ausleihe -------')
-    for item in sorted(curr_rental_items, key=lambda x:x.id):
+    for item in sorted(curr_rental_items, key=lambda x:x.id if hasattr(x, 'id') else '000'):
         try:
             code = item.id
             if not code in unavailable_wc:
                 print(f'{code} {item.item_name}: aktive Ausleihe, aber ist online "auf Lager"')
         except:
-            print(f'Fehler mit {item}')
+            print(f'Fehler beim filtern von {item}')
     print('-'*55)
 
 
