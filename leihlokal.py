@@ -66,7 +66,7 @@ class Item(Object):
 
     def __repr__(self):
         try:
-            return f'Item {self.id} ({self.item_name}, {self.deposit}€, {self.status_on_website})'
+            return f'Item {self.id} ({self.name}, {self.deposit}€, {self.status})'
         except Exception as e:
             print(repr(e), str(e))
 
@@ -93,35 +93,32 @@ class LeihLokal(object):
         items = {}
         customers = {}
 
-        # get the three tables
-        rentals_db = couchdb['rentals']
-        items_db = couchdb['items']
-        customers_db = couchdb['customers']
+        db = couchdb['leihlokal']
+        all_docs = db.all_docs(include_docs=True)['rows']
 
 
         # iterate over all customers and add them
         print('retrieving customers')
-        for row in customers_db.all_docs(include_docs=True)['rows']:
+        for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "customer", all_docs)):
             if row['key'].startswith('_'): continue # hidden reference
             attrs = dict(row['doc'])
-            attrs['id'] = attrs['_id']
+            attrs['id'] = attrs['id']
             customer = Customer(**attrs)
             customers[attrs['id'] ] = customer
 
         # iterate over all items and add them
         print('retrieving items')
-
-        for row in items_db.all_docs(include_docs=True)['rows']:
+        for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "item", all_docs)):
             if row['key'].startswith('_'): continue # hidden reference
             attrs = dict(row['doc'])
-            attrs['id'] = attrs['_id']
+            attrs['id'] = attrs['id']
             item = Item(**attrs)
             item.status = 'verfügbar' # preliminarily set status to available, check later
             items[attrs['id']] = item
 
         # iterate over all rentals and add them
         print('retrieving rentals')
-        for row in rentals_db.all_docs(include_docs=True)['rows']:
+        for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "rental", all_docs)):
             if row['key'].startswith('_'): continue # hidden reference
             attrs = dict(row['doc'])
             attrs['id'] = attrs['_id']
@@ -143,7 +140,8 @@ class LeihLokal(object):
             try:
                 rental.item.status = 'verliehen'
             except:
-                print(f'could not set status of {rental}')
+                print(f'Fehler beim Scannen der Ausleihe: {rental}')
+                
     def filter_items(self, predicate):
         filtered = []
         for item in self.items.values():
