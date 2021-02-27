@@ -66,7 +66,7 @@ class Item(Object):
 
     def __repr__(self):
         try:
-            return f'Item {self.id} ({self.item_name}, {self.deposit}€, {self.status})'
+            return f'Item {self.id} ({self.name}, {self.deposit}€, {self.status})'
         except Exception as e:
             print(repr(e), str(e))
 
@@ -140,7 +140,8 @@ class LeihLokal(object):
             try:
                 rental.item.status = 'verliehen'
             except:
-                print(f'could not set status of {rental}')
+                print(f'Fehler beim Scannen der Ausleihe: {rental}')
+                
     def filter_items(self, predicate):
         filtered = []
         for item in self.items.values():
