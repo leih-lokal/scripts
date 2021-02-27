@@ -99,7 +99,7 @@ class LeihLokal(object):
 
         # iterate over all customers and add them
         print('retrieving customers')
-        for row in list(filter(lambda doc: doc["type"] == "customer", all_docs)):
+        for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "customer", all_docs)):
             if row['key'].startswith('_'): continue # hidden reference
             attrs = dict(row['doc'])
             attrs['id'] = attrs['id']
@@ -108,7 +108,7 @@ class LeihLokal(object):
 
         # iterate over all items and add them
         print('retrieving items')
-        for row in list(filter(lambda doc: doc["type"] == "item", all_docs)):
+        for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "item", all_docs)):
             if row['key'].startswith('_'): continue # hidden reference
             attrs = dict(row['doc'])
             attrs['id'] = attrs['id']
@@ -118,7 +118,7 @@ class LeihLokal(object):
 
         # iterate over all rentals and add them
         print('retrieving rentals')
-        for row in list(filter(lambda doc: doc["type"] == "rental", all_docs)):
+        for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "rental", all_docs)):
             if row['key'].startswith('_'): continue # hidden reference
             attrs = dict(row['doc'])
             attrs['id'] = attrs['_id']
