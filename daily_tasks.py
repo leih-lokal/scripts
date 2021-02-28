@@ -37,12 +37,13 @@ def get_reminder_template(customer, rental):
 
 def get_deletion_template(customer):
     lastinteraction = customer.last_interaction().strftime('%d.%m.%Y')
-    string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n'\
-             f'Ihre letzte Ausleihe im Leihlokal war vor mehr als einem Jahr ({lastinteraction}).\n'\
-             f'Aus datenschutzrechtlichen Gründen sind wir verpflichtet Ihre Daten nach dieser Frist zu löschen.\n'\
-             f'Falls Sie weiter Mitglied im Leihlokal sein wollen, antworten Sie bitte kurz auf diese Mail.\n\n'\
-             f'Falls wir keine Antwort erhalten, werden wir Ihre Daten aus dem System entfernen.\n\n'\
-             f'Liebe Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+    string = f'Liebe/r {customer.firstname} {customer.lastname},\n\n'\
+             f'um die persönlichen Daten unserer Kunden zu schützen löschen wir diese, ' \
+             f'nachdem mehr als ein Jahr seit dem letzten Kontakt vergangen ist. ' \
+             f'In Ihrem Fall ist dies am {lastinteraction} gewesen.\n' \
+             f'Wir freuen uns, wenn Sie weiter Mitglied im Leihlokal sein möchten.\n'\
+             f'In diesem Fall antworten Sie bitte kurz auf diese Mail.\n\n'\
+             f'Liebe Grüße und vielleicht bis Bald aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
     string = urllib.parse.quote(string)
     return string
 
