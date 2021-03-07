@@ -7,8 +7,10 @@ retrieve data from website
 @author: Simon
 """
 import os
+import itertools
 import requests
 import time
+import json
 from bs4 import BeautifulSoup
 from joblib import Parallel, delayed
 from tqdm import tqdm
@@ -51,7 +53,7 @@ def get_leihlokaldata():
     request_urls = [sortiment_url + str(i) for i in range(1, n_pages+1)]
     
     # we request 8 pages at once and then 200ms delay
-    res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls, desc='downloading info'))
+    res = Parallel(n_jobs=n_pages, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls, desc='downloading info'))
 
     # get all <li> tags that are of class 'product'
     page_html = []
@@ -69,7 +71,19 @@ def get_leihlokaldata():
         products[code] = {'code': code,
                           'name': name,
                           'page_url': page_url,
-                          'status': status
+                          'status': status,
                           }
+    return products
+
+
+def get_leihlokaldata_API():
+    """Same as other function but use the WooCommerce REST API"""
+    # this is the url that we use to fetch the
+    with open('settings.json', 'r') as f:
+        settings = json.load(f)
+
+    request_url = f'https://www.buergerstiftung-karlsruhe.de/wp-json/wc/v3/products?consumer_key={settings["wc-key"]}&consumer_secret={settings["wc-secret"]}&per_page=100&page='
+    res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(request_url + str(i)) for i in tqdm(list(range(1, 12)), desc='downloading info'))
+    products = {p['id']:p for p in list(itertools.chain(*[x.json() for x in res]))}
     return products
 
