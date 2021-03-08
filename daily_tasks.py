@@ -24,14 +24,23 @@ with open('settings.json', 'r', encoding='utf-8') as f:
 def get_reminder_template(customer, rental):
     rented_on = rental.rented_on.strftime('%d.%m.%Y')
     to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
-    string = f'Liebe/r {customer.firstname} {customer.lastname}.\n\n' \
-             f'Danke, dass Sie Ausleiher/in im leih.lokal sind.\n\n'\
-             f'Wir möchten Sie daran erinnern, den am {rented_on} ausgeliehenen Gegenstand ({rental.item_name} (Nr. {rental.item_id})) wieder abzugeben. '\
-             f'Der bei uns vermerkte Rückgabetermin war der {to_return_on}.\n\n'\
-             f'Zum heutigen Zeitpunkt fallen 2 Euro an, die unserer Spendenkasse zugeführt werden. '\
-             f'Wie Sie unseren Nutzungsbedingungen entnehmen können, kommt pro Öffnungstag eine kleine Säumnisgebühr von 2 Euro je Gegenstand dazu. '\
-             f'Bei Fragen wenden Sie sich bitte via E-Mail an leih.lokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an unsere Mitarbeiter.\n\n'\
-             f'Grüße aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16'
+    string = f"""Liebe/r {customer.firstname} {customer.lastname}
+
+danke, dass Sie Ausleiher/in im leih.lokal sind. 
+Wir freuen uns, dass immer mehr Menschen Gegenstände leihen.
+   
+Bei der Ausleihe am {rented_on} hatten wir als Rückgabefrist den {to_return_on} vereinbart.
+Damit auch andere Nutzer von unserem Angebot profitieren können, bitten wir Sie, den Gegenstand {rental.item_name} (Nr. {rental.item_id}) zurückzubringen.
+Mit jedem Öffnungstag fällt eine kleine Säumnisgebühr von 2 Euro an, die dem Erhalt des leih.lokals zugute kommt, d.h. zum jetzigen Zeitpunkt 2 Euro.
+
+Bei Fragen oder wegen möglicher Verlängerung wenden Sie sich bitte via E-Mail an leihlokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an einen unserer ehrenamtlichen MitarbeiterInnen.
+Liebe Grüße aus dem leih.lokal.
+
+Gerwigstr. 41, 76185 Karlsruhe
+Öffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16
+http://www.buergerstiftung-karlsruhe.de/leihlokal/
+
+Diese Email wurde automatisch erstellt."""
     string = urllib.parse.quote(string)
     return string
 
