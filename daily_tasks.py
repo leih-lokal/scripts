@@ -34,7 +34,7 @@ Damit auch andere Nutzer von unserem Angebot profitieren können, bitten wir Sie
 Mit jedem Öffnungstag fällt eine kleine Säumnisgebühr von 2 Euro an, die dem Erhalt des leih.lokals zugute kommt, d.h. zum jetzigen Zeitpunkt 2 Euro.
 
 Bei Fragen oder wegen möglicher Verlängerung wenden Sie sich bitte via E-Mail an leihlokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an einen unserer ehrenamtlichen MitarbeiterInnen.
-Liebe Grüße aus dem leih.lokal.
+Viele Grüße aus dem leih.lokal.
 
 Gerwigstr. 41, 76185 Karlsruhe
 Öffnungszeiten: Mo, Do, Fr: 15-19, Sa: 11-16
