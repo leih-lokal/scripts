@@ -144,3 +144,5 @@ if __name__=='__main__':
 
 
     os.system(f'start excel.exe "{xls_file}"')
+    if 'clickandcollect_' in csv_file:
+        os.remove(csv_file)
