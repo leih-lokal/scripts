@@ -13,6 +13,7 @@ from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
 import json
 import io
+from mechanize import Browser #pip install mechanize
 
 
 def choose_filesave(default_dir=None, default_filename='übersicht.xlsx', title='Bitte Speicherort wählen'):
@@ -62,7 +63,6 @@ def show_date_picker(title=''):
 
 
 def download_bookings_csv():
-    from mechanize import Browser #pip install mechanize
 
     login_url = 'https://buergerstiftung-karlsruhe.de/wp-login.php'
     csv_url = 'https://www.buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&list=1&search=&dfrom=&dto=&cal=2&cp_appbooking_csv=Export+to+CSV'
