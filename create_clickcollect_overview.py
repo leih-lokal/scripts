@@ -7,13 +7,15 @@ and creates an overview for the current day in XLS format to print out
 
 @author: Simon
 """
-
-import os, sys
+import os
 import pandas as pd
-from tkinter.filedialog import askopenfilename, askdirectory
+from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
+import json
+import io
 
-def choose_file(default_dir=None, title='Bitte die CSV-Datei auswählen'):
+
+def choose_filesave(default_dir=None, default_filename='übersicht.xlsx', title='Bitte Speicherort wählen'):
     """
     Open a file chooser dialoge with tkinter.
     
@@ -24,28 +26,27 @@ def choose_file(default_dir=None, title='Bitte die CSV-Datei auswählen'):
     root = Tk()
     root.iconify()
     root.update()
-    name = askopenfilename(initialdir=default_dir,
-                           parent=root,
-                           title = title,
-                           filetypes =(("CSV", "*.csv") ,
-                                       ("All Files","*.*")))
+    name = asksaveasfile(initialdir=default_dir,
+                         initialfile=default_filename,
+                         parent=root,
+                         title = title,
+                         filetypes =(("CSV", "*.xlsx"), ))
     root.update()
     root.destroy()
-    if not os.path.exists(name):
-        print("No file chosen")
-    else:
-        return name
+    return name.name
   
 def show_date_picker(title=''):
     import tkinter as tk
-    from tkinter import ttk
     from tkcalendar import Calendar
 
     def cal_done():
         top.withdraw()
         root.quit()
 
-    root = tk.Tk()
+    root = Tk()
+    root.iconify()
+    root.update()
+
     root.title(title)
     root.withdraw() # keep the root window from appearing
 
@@ -60,11 +61,48 @@ def show_date_picker(title=''):
     return cal.selection_get()
 
 
+def download_bookings_csv():
+    from mechanize import Browser #pip install mechanize
 
+    login_url = 'https://buergerstiftung-karlsruhe.de/wp-login.php'
+    csv_url = 'https://www.buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&list=1&search=&dfrom=&dto=&cal=2&cp_appbooking_csv=Export+to+CSV'
+
+    with open('settings.json', 'r') as f:
+        settings = json.load(f)
+
+    uname = settings['wp-user']
+    passw = settings['wp-pass']
+
+    br = Browser()
+    br.set_handle_robots(False)
+    br.addheaders = [("User-agent","Python Script using mechanize")]
+    print('Connecting to WP.')
+    sign_in = br.open(login_url)  #the login url
+     
+    br.select_form(nr = 0) #accessing form by their index. Since we have only one form in this example, nr =0.
+    br["log"] = uname #the key "username" is the variable that takes the username/email value
+    br["pwd"] = passw    #the key "password" is the variable that takes the password value
+    print('Logging in to WP...')
+
+    logged_in = br.submit()   #submitting the login credentials
+    print('Downloading CSV from database...')
+
+    assert logged_in.code == 200, 'Login to WP failed'  #print HTTP status code(200, 404...)
+    download = br.open(csv_url)
+
+    assert download.code == 200, 'Failed to download bookings CSV'
+
+    return download.read().decode(encoding='iso-8859-1')
+
+
+#%%
 if __name__=='__main__':
 
-    csv_file = choose_file(os.path.expanduser("~\\Desktop\\"))
-    df = pd.read_csv(csv_file, encoding='iso-8859-1')
+
+    csv_file = download_bookings_csv()
+    f = io.StringIO(csv_file)
+    df = pd.read_csv(f, sep=';')
+
     df.fillna('',inplace=True)
     df = df.convert_dtypes('str')
     keep_columns = ['app_starttime_1', 'Ich möchte einen Gegenstand/Gegenstände..',
@@ -86,8 +124,9 @@ if __name__=='__main__':
     df_selected = df_selected.loc[df['app_status_1'] != 'Cancelled']
     df_selected = df_selected.loc[df['app_status_1'] != 'Rejected']
 
+    df_selected = df_selected.convert_dtypes('str')
     df_selected.drop('app_date_1', axis=1, inplace=True)
-    df_selected['Ihr Vor- und Zuname'] = df_selected['Ihr Vor- und Zuname'] + ' ('+ df_selected['Ihre Nutzernummer (falls zur Hand)'] + ')'
+    df_selected['Ihr Vor- und Zuname'] = df_selected['Ihr Vor- und Zuname'] + ' ('+ df_selected['Ihre Nutzernummer (falls zur Hand)'].astype(str) + ')'
     df_selected.drop('Ihre Nutzernummer (falls zur Hand)', axis=1, inplace=True)
 
     # rename columns
@@ -113,7 +152,8 @@ if __name__=='__main__':
     df_selected = df_selected.sort_values('Zeit', ignore_index=True)
     df_selected.set_index('Zeit', inplace=True)
 
-    xls_file = os.path.dirname(csv_file) + f'\\CC-Übersicht-{date_str}.xlsx'
+    xls_file = choose_filesave(default_dir=os.path.expanduser('~\\Desktop\\'), default_filename=f'CC-Übersicht-{date_str}.xlsx')
+
 
     with pd.ExcelWriter(xls_file, engine='xlsxwriter') as writer:
         book = writer.book
