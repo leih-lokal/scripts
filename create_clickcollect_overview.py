@@ -217,7 +217,7 @@ if __name__=='__main__':
     df_selected.set_index('Zeit', inplace=True)
     df_selected['Eingetragen?'] = ['[   ]']*len(df_selected)
 
-    row = ['', '* Nutzernummer automatisch inferiert. Kann fehlerhaft sein!', *(len(df_selected.columns)-2)*['']]
+    row = ['', '* Nutzernummer und Pfandbeträge automatisch inferiert. Kann fehlerhaft sein!', *(len(df_selected.columns)-2)*['']]
     df_selected.loc[len(df_selected)] = row
     df_selected.index = df_selected.index.to_list()[:-1]+ ['']
 
@@ -248,7 +248,7 @@ if __name__=='__main__':
             return [idx_max] + [max([len(str(s)) for s in dataframe[col].values[:-1]] + [len(col)]) for col in dataframe.columns]
         
         for i, width in enumerate(get_col_widths(df_selected)):
-            sheet.set_column(i, i, min(width+1, 30))
+            sheet.set_column(i, i, min(width+1, 27))
 
 
         format = book.add_format()
@@ -260,7 +260,7 @@ if __name__=='__main__':
 
         format = book.add_format()
         format.set_font_size(9)
-        sheet.set_column('E:E', 10, format)
+        sheet.set_column('E:E', 12, format)
         sheet.set_column('F:F', 7, format)
         sheet.set_column('G:G', 5, format)
         sheet.set_column('G:G', 15)
