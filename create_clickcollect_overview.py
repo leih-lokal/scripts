@@ -14,7 +14,21 @@ from tkinter import Tk
 import json
 import io
 from mechanize import Browser #pip install mechanize
+import leihlokal
+customers = leihlokal.LeihLokal().customers
 
+def get_customer_id_by_name(full_name):
+    found = 0
+    for c in customers.values():
+        if f'{c.firstname} {c.lastname}'.lower() == full_name.lower():
+            cid = f'{c.id}*'
+            found +=1
+    if found==0:
+        return '?'
+    elif found>1:
+        print(f'Mehrere Nutzer mit Name {full_name} gefunden.')
+        return '?'
+    return cid
 
 def choose_filesave(default_dir=None, default_filename='übersicht.xlsx', title='Bitte Speicherort wählen'):
     """
@@ -98,8 +112,10 @@ def download_bookings_csv():
 #%%
 if __name__=='__main__':
 
-
+    
     csv_file = download_bookings_csv()
+    print('Extracting data...')
+    #%%
     f = io.StringIO(csv_file)
     df = pd.read_csv(f, sep=';')
 
@@ -123,25 +139,43 @@ if __name__=='__main__':
     df_selected = df_selected.loc[df['app_status_1'] != 'Cancelled by customer']
     df_selected = df_selected.loc[df['app_status_1'] != 'Cancelled']
     df_selected = df_selected.loc[df['app_status_1'] != 'Rejected']
+    df_selected = df_selected.loc[df['app_status_1'] != 'Zusammengelegt']
 
     df_selected = df_selected.convert_dtypes('str')
+
+    ids_infered = []
+    for name, neu, customer_id in zip(df_selected['Ihr Vor- und Zuname'], df_selected['Ich bin'], df_selected['Ihre Nutzernummer (falls zur Hand)']):
+        try:
+            customer_id = int(customer_id)
+        except:
+            pass
+        if neu=='NeukundIn':
+            customer_id = 'neu'
+        elif customer_id=='':
+            customer_id = get_customer_id_by_name(name)
+        ids_infered.append(customer_id)
+
+    df_selected['Ihre Nutzernummer (falls zur Hand)'] = ids_infered
+
     df_selected.drop('app_date_1', axis=1, inplace=True)
     df_selected['Ihr Vor- und Zuname'] = df_selected['Ihr Vor- und Zuname'] + ' ('+ df_selected['Ihre Nutzernummer (falls zur Hand)'].astype(str) + ')'
     df_selected.drop('Ihre Nutzernummer (falls zur Hand)', axis=1, inplace=True)
+    df_selected.drop('Ich bin', axis=1, inplace=True)
 
     # rename columns
     df_selected.rename({'Ihr Vor- und Zuname':'NutzerIn',
-                        'Ich möchte einen Gegenstand/Gegenstände..':'Vorgang',
+                        'Ich möchte einen Gegenstand/Gegenstände..':'a/z',
                         'app_starttime_1':'Zeit',
                         'Haben Sie noch Kommentare oder Anmerkungen zu Ihrem Termin?':'Kommentar',
-                        'app_status_1': 'Status',
-                        'Ich bin': 'Neu?'},
+                        'app_status_1': 'Status'},
                         inplace=True, axis=1)
+
+
 
     df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x.replace('\r', '').replace('\n', ' ' ).replace('\t', ''))
     df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:30] + ('[...]' * (len(x)>20)))
-    df_selected['Neu?'] = df_selected['Neu?'].map(lambda x: 'Ja' if 'Neu' in x else '')
-    df_selected['Vorgang'] = df_selected['Vorgang'].map(lambda x: x.replace('geben', ''))
+    df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('abholen', 'ab'))
+    df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('zurückgeben', 'z'))
 
     opening_hours = range(11, 16) if date.weekday()==5 else range(15, 19)
     missing_slots = [f'{h}:{m}0' for h in opening_hours for m in range(6) if not f'{h}:{m}0' in df_selected['Zeit'].values][:-1]
@@ -151,10 +185,17 @@ if __name__=='__main__':
 
     df_selected = df_selected.sort_values('Zeit', ignore_index=True)
     df_selected.set_index('Zeit', inplace=True)
+    df_selected['Pfand?'] = ['']*len(df_selected)
+    df_selected['Liste?'] = ['']*len(df_selected)
+
+    row = ['', '* Nutzernummer automatisch inferiert. Kann fehlerhaft sein!', *(len(df_selected.columns)-2)*['']]
+    df_selected.loc[len(df_selected)] = row
+    df_selected.index = df_selected.index.to_list()[:-1]+ ['']
 
     xls_file = choose_filesave(default_dir=os.path.expanduser('~\\Desktop\\'), default_filename=f'CC-Übersicht-{date_str}.xlsx')
 
-
+    print('Writing excel...')
+#%%
     with pd.ExcelWriter(xls_file, engine='xlsxwriter') as writer:
         book = writer.book
         df_selected.to_excel(writer, sheet_name=date_str)
@@ -165,24 +206,44 @@ if __name__=='__main__':
         sheet.hide_gridlines(False)
         sheet.fit_to_pages(1,1)
         sheet.set_margins(0, 0, 0, 0)
-        sheet.set_print_scale(120)
+        sheet.set_print_scale(110)
+
+        format = book.add_format()
+        format.set_shrink()
+        sheet.set_column('D:H', 5,  format)
+
 
         def get_col_widths(dataframe):
             # First we find the maximum length of the index column
             idx_max = max([len(str(s)) for s in dataframe.index.values] + [len(str(dataframe.index.name))])
             # Then, we concatenate this to the max of the lengths of column name and its values for each column, left to right
-            return [idx_max] + [max([len(str(s)) for s in dataframe[col].values] + [len(col)]) for col in dataframe.columns]
+            return [idx_max] + [max([len(str(s)) for s in dataframe[col].values[:-1]] + [len(col)]) for col in dataframe.columns]
         
         for i, width in enumerate(get_col_widths(df_selected)):
-            sheet.set_column(i, i, min(width+1, 20))
+            sheet.set_column(i, i, min(width+1, 30))
 
 
         format = book.add_format()
         format.set_align('center')
         format.set_align('vcenter')
-        sheet.set_column('D:E',5, format)
+        # sheet.set_column('D:E', None, format)
+        sheet.set_column('B:B', 3, format)
+        sheet.set_column('E:E', 4, format)
+
+        format = book.add_format()
+        format.set_font_size(9)
+        sheet.set_column('E:E', 10, format)
+        sheet.set_column('F:F', 25, format)
+
+        sheet.set_column('G:G', 5)
+        sheet.set_column('H:H', 5)
+
+
+
+
 
 
     os.system(f'start excel.exe "{xls_file}"')
+    #%%
     if 'clickandcollect_' in csv_file:
         os.remove(csv_file)
