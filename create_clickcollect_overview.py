@@ -8,6 +8,7 @@ and creates an overview for the current day in XLS format to print out
 @author: Simon
 """
 import os
+import re
 import pandas as pd
 from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
@@ -15,7 +16,11 @@ import json
 import io
 from mechanize import Browser #pip install mechanize
 import leihlokal
-customers = leihlokal.LeihLokal().customers
+import itertools
+
+leihlokal = leihlokal.LeihLokal()
+customers = leihlokal.customers
+items = leihlokal.items
 
 def get_customer_id_by_name(full_name):
     found = 0
@@ -29,6 +34,20 @@ def get_customer_id_by_name(full_name):
         print(f'Mehrere Nutzer mit Name {full_name} gefunden.')
         return '?'
     return cid
+
+def get_deposit_by_ids(ids_string):
+    ids = [int(x) for x in re.findall('[0-9]+', ids_string)]
+    if len(ids)==0: return '?€'
+    deposits = [items[id].deposit if id in items else '?€' for id in ids ]
+    # grouped = [list(g) for k, g in itertools.groupby(deposits)]
+    # summary = [f'{len(x)}x{x[0]}' if len(x)>1 else f'{x[0]}' for x in grouped]
+    try:
+        total = sum(deposits)
+    except:
+        total = '?'
+    deposit_string = '+'.join([f'{x}' for x in deposits])
+    return f'{total}€ ({deposit_string})' if len(deposits)>1 else f'{total}€'
+
 
 def choose_filesave(default_dir=None, default_filename='übersicht.xlsx', title='Bitte Speicherort wählen'):
     """
@@ -154,8 +173,19 @@ if __name__=='__main__':
         elif customer_id=='':
             customer_id = get_customer_id_by_name(name)
         ids_infered.append(customer_id)
-
     df_selected['Ihre Nutzernummer (falls zur Hand)'] = ids_infered
+
+    deposit_infered = []
+    for ids_string, mode in zip(df_selected['Artikelnummer(n)'], df_selected['Ich möchte einen Gegenstand/Gegenstände..']):
+        # if mode=='zurückgeben':
+        #     deposit = ''
+        # else:
+        try:
+            deposit = get_deposit_by_ids(ids_string)
+        except:
+            deposit = '?€'
+        deposit_infered.append(deposit)
+    df_selected.insert(5, 'Pfand', deposit_infered)
 
     df_selected.drop('app_date_1', axis=1, inplace=True)
     df_selected['Ihr Vor- und Zuname'] = df_selected['Ihr Vor- und Zuname'] + ' ('+ df_selected['Ihre Nutzernummer (falls zur Hand)'].astype(str) + ')'
@@ -173,7 +203,7 @@ if __name__=='__main__':
 
 
     df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x.replace('\r', '').replace('\n', ' ' ).replace('\t', ''))
-    df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:30] + ('[...]' * (len(x)>20)))
+    df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:20] + ('[...]' * (len(x)>15)))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('abholen', 'ab'))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('zurückgeben', 'z'))
 
@@ -185,8 +215,7 @@ if __name__=='__main__':
 
     df_selected = df_selected.sort_values('Zeit', ignore_index=True)
     df_selected.set_index('Zeit', inplace=True)
-    df_selected['Pfand?'] = ['']*len(df_selected)
-    df_selected['Liste?'] = ['']*len(df_selected)
+    df_selected['Eingetragen?'] = ['[   ]']*len(df_selected)
 
     row = ['', '* Nutzernummer automatisch inferiert. Kann fehlerhaft sein!', *(len(df_selected.columns)-2)*['']]
     df_selected.loc[len(df_selected)] = row
@@ -212,7 +241,6 @@ if __name__=='__main__':
         format.set_shrink()
         sheet.set_column('D:H', 5,  format)
 
-
         def get_col_widths(dataframe):
             # First we find the maximum length of the index column
             idx_max = max([len(str(s)) for s in dataframe.index.values] + [len(str(dataframe.index.name))])
@@ -233,15 +261,14 @@ if __name__=='__main__':
         format = book.add_format()
         format.set_font_size(9)
         sheet.set_column('E:E', 10, format)
-        sheet.set_column('F:F', 25, format)
+        sheet.set_column('F:F', 7, format)
+        sheet.set_column('G:G', 5, format)
+        sheet.set_column('G:G', 15)
 
-        sheet.set_column('G:G', 5)
-        sheet.set_column('H:H', 5)
-
-
-
-
-
+        format = book.add_format()
+        format.set_font_color('#808080')
+        format.set_align('center')
+        sheet.set_column('H1:H32', 12, format)
 
     os.system(f'start excel.exe "{xls_file}"')
     #%%
