@@ -217,7 +217,7 @@ if __name__=='__main__':
     df_selected.set_index('Zeit', inplace=True)
     df_selected['Eingetragen?'] = ['[   ]']*len(df_selected)
 
-    row = ['', '* Nutzernummer und Pfandbeträge automatisch inferiert. Kann fehlerhaft sein!', *(len(df_selected.columns)-2)*['']]
+    row = ['', '* Nutzernummer und Pfandbeträge automatisch inferiert. Kann fehlerhaft sein!\nEs werden sämtliche im Textfeld enthaltene Zahlen als Gegenstandsnummern interpretiert.', *(len(df_selected.columns)-2)*['']]
     df_selected.loc[len(df_selected)] = row
     df_selected.index = df_selected.index.to_list()[:-1]+ ['']
 
