@@ -61,6 +61,20 @@ class Customer(Object):
 
 
 class Item(Object):
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self, obj):
+        _id = repr(self)
+        if hasattr(obj, 'id'):
+            _id = obj.id
+        if isinstance(obj, str) and obj.isdigit():
+            _id = int(obj)
+        if isinstance(obj, (float, int)):
+            _id = int(obj)
+        return _id==self.id
+
     def __init__(self, **kwargs):
         super(Item, self).__init__(**kwargs)
 
@@ -83,9 +97,6 @@ class Rental(Object):
 
 class LeihLokal(object):
     def __init__(self, user='user', password='password', url='http://localhost:5984'):
-        user='user'
-        password='password'
-        url='http://localhost:5984'
         print(f'connecting to {url}')
         couchdb = CouchDB(user, password, url=url, connect=True, auto_renew=True)
 
@@ -113,7 +124,8 @@ class LeihLokal(object):
             attrs = dict(row['doc'])
             attrs['id'] = attrs['id']
             item = Item(**attrs)
-            item.status = 'verfügbar' # preliminarily set status to available, check later
+            # item.status = 'verfügbar' # preliminarily set status to available, check later
+            item.rentals = []
             items[attrs['id']] = item
 
         # iterate over all rentals and add them
@@ -124,9 +136,13 @@ class LeihLokal(object):
             attrs['id'] = attrs['_id']
             rental = Rental(**attrs)
             rental.item = items.get(rental.item_id, f"Item {rental.item_id} not found")
+            if not isinstance(rental.item, str):
+                rental.item.rentals.append(rental)
             customer = customers.get(rental.customer_id, None)
             rental.customer = customer
-            if customer:  customer.rentals.append(rental)
+            if customer:
+                customer.rentals.append(rental)
+
             rentals.append(rental)
         rentals = sorted(rentals, key=lambda x:x.rented_on if isinstance(x.rented_on, date) else date.fromtimestamp(0))
 

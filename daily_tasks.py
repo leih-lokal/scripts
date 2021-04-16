@@ -245,29 +245,49 @@ def check_website_status(store):
     wc_products = get_leihlokaldata()
 
     unavailable_wc = {str(key).zfill(4):wc_products[key] for key in wc_products.keys() if wc_products[key]['status']=='Verliehen'}
+    available_wc = {str(key).zfill(4):wc_products[key] for key in wc_products.keys() if wc_products[key]['status']=='Ausleihbar'}
+
     # unavailable_couchdb = self.filter_items(lambda x:x.status_on_website!='outofstock')
     curr_rental_items = list(set([rental.item for rental in store.filter_rentals(lambda x:not x.returned_on)]))
-    print('------- Online verliehen, aber keine Ausleihe ---------')
+    curr_reserved_items = store.filter_items(lambda x: x.status=='reserved')
+    curr_inrepair_items = store.filter_items(lambda x: x.status=='onbackorder')
+
+    print('\n------- Online verliehen, aber keine Ausleihe ---------')
     for code in sorted(unavailable_wc):
         name = unavailable_wc[code]['name']
         item = store.items.get(int(code))
         if item is None: 
             print(f'{item} nicht gefunden')
             continue
-        if item not in curr_rental_items:
+        if item not in curr_rental_items \
+            and not item.id in curr_reserved_items\
+            and not item.id in curr_inrepair_items:
             print(f'{code} {name}: ist online auf "verliehen", aber hat keine Ausleihe')
         if item.exists_more_than_once:
             print(f"{code} {name}: Existiert mehr als einmal, ist aber online auf 'Verliehen'")
-    print('------- Online verfügbar, aber aktive Ausleihe -------')
+
+    print('\n------- Online verfügbar, aber aktive Ausleihe -------')
     for item in sorted(curr_rental_items, key=lambda x:x.id if hasattr(x, 'id') else 0):
         try:
             code = f'{item.id}'.zfill(4)
             if not code in unavailable_wc and not item.exists_more_than_once:
                 print(f'{code} {item.name}: aktive Ausleihe, aber ist online "auf Lager"')
+
         except Exception as e:
             print(f'Fehler beim filtern von {item}: {e}')
-            
-    print('-'*55)
+
+    print('\n------- Online reserviert, schau bitte ob Reservierung noch aktuell-------')
+    for item in curr_reserved_items:
+        print(item)
+
+    print('\n------- [INFO] Als "in Reparatur" markiert -------')
+    for item in curr_inrepair_items:
+        if item.id in available_wc:
+            print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar')
+        print(f'{item} online nicht verfügbar')
+
+
+    print('\n' + '-'*55)
 
 
 
