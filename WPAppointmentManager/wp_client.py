@@ -11,15 +11,13 @@ class WordpressClient:
         LOGIN_URL = "https://www.buergerstiftung-karlsruhe.de/wp-login.php"
         self.session.get(LOGIN_URL)
         headers = {
-            "referer": LOGIN_URL,
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 Safari/537.36'
+            "referer": LOGIN_URL
         }
         data = {
             "log": user,
             "pwd": password,
             "wp-submit": "Anmelden",
-            "redirect_to": "https://www.buergerstiftung-karlsruhe.de/wp-admin/",
-            "testcookie": "1"
+            "redirect_to": "https://www.buergerstiftung-karlsruhe.de/wp-admin/"
         }
         response = self.session.post(LOGIN_URL, headers=headers, data=data)
         if response.status_code != 200:
