@@ -1,13 +1,19 @@
+import os
 import requests
 import csv
+
+from appointment_parser import parse_appointments
 
 
 class WordpressClient:
 
     def __init__(self):
         self.session = requests.Session()
+        self._authenticate()
 
-    def authenticate(self, user, password):
+    def _authenticate(self):
+        user = os.environ.get("WP_USER")
+        password = os.environ.get("WP_PASSWORD")
         LOGIN_URL = "https://www.buergerstiftung-karlsruhe.de/wp-login.php"
         self.session.get(LOGIN_URL)
         headers = {
@@ -27,4 +33,5 @@ class WordpressClient:
         response = self.session.get(
             f"https://www.buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&schedule=1&dfrom={from_date.strftime('%d.%m.%Y')}&dto={to_date.strftime('%d.%m.%Y')}&paid=&status=-1&cal=2&cp_appbooking_csv2=Exportieren+nach+CSV")
 
-        return list(csv.reader(response.content.decode('utf8', "ignore").splitlines(), delimiter=';'))
+        appointments = list(csv.reader(response.content.decode('utf8', "ignore").splitlines(), delimiter=';'))
+        return parse_appointments(appointments)

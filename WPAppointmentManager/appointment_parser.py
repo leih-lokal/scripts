@@ -12,10 +12,11 @@ def _appointment_to_dict(headers):
     return appointment_to_dict
 
 
-def clean_data(appointment):
+def _clean_data(appointment):
     items = re.split(',|\s', appointment["Artikelnummer(n)"])
     items = list(map(lambda item: re.sub('[^0-9]', '', item), items))
     items = list(filter(lambda item: len(item) > 0, items))
+    items = list(map(lambda item: int(item), items))
 
     return {
         "items": items,
@@ -28,7 +29,8 @@ def clean_data(appointment):
         "status": appointment["cancelled"], # Attended / Genehmigt / Zusammengelegt / Cancelled by customer / Rejected / Cancelled
         "customer_name": appointment['Ihr Vor- und Zuname'],
         "customer_id": appointment['Ihre Nutzernummer (falls zur Hand)'],
-        "customer_mail": appointment['Ihre Email']
+        "customer_mail": appointment['Ihre Email'],
+        "appointment_id": appointment['itemnumber']
     }
 
 
@@ -39,6 +41,6 @@ def parse_appointments(appointments):
 
     headers = appointments.pop(0)
     apply_map_fun(_appointment_to_dict(headers))
-    apply_map_fun(clean_data)
+    apply_map_fun(_clean_data)
 
     return appointments
