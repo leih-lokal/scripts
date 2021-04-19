@@ -20,6 +20,10 @@ def all_items_instock(item_ids):
             return False
     return True
 
+def reserve_items(items):
+    # TODO
+    pass
+
 def should_auto_accept(appointment):
     if appointment["other_appointment"]:
         logging.info(f"Did not auto accept appointment {str(appointment)} because customer has other appointment")
@@ -43,9 +47,12 @@ def should_auto_accept(appointment):
 wp_client = WordpressClient()
 appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=7))
 
-# TODO correct status
 # new appointments which are not genehmigt / cancelled / attended yet
-#appointments = list(filter(lambda appointment: appointment["status"] == "Neu", appointments))
+appointments = list(filter(lambda appointment: appointment["status"] == "Pending", appointments))
 
 for appointment in appointments:
-    should_auto_accept(appointment)
+    if should_auto_accept(appointment):
+        reserve_items(appointment["items"])
+        wp_client.accept_appointment(appointment["appointment_id"])
+        logging.info(f"Accepted items {appointment['items']} for appointment {appointment['appointment_id']}")
+        # TODO: insert appointments into db, so that can be displayed in frontend

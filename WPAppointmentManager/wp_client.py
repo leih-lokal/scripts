@@ -1,4 +1,6 @@
 import os
+import re
+import random
 import requests
 import csv
 
@@ -35,3 +37,35 @@ class WordpressClient:
 
         appointments = list(csv.reader(response.content.decode('utf8', "ignore").splitlines(), delimiter=';'))
         return parse_appointments(appointments)
+
+    def _update_appointment(self, id, status):
+        """
+        updates appointment on wordpress
+        :param id: id of appointment
+        :param status: status of appointment ("" = accepted)
+        :return:
+        """
+        response = self.session.get(
+            f"https://www.buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&list=1&r={random.random()}")
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to connect to wordpress while updating appointment {id}")
+        m = re.search('anonce=(.+?)&', response.text)
+        if not m:
+            raise RuntimeError(f"Failed to update appointment {id}")
+        anonce = m.group(1)
+        response = self.session.get(
+            f"https://www.buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&anonce={anonce}&cal=2&list=1&ud={id}&status={status}&r={random.random()}")
+        if response.status_code != 200:
+            raise RuntimeError(f"Failed to update appointment {id}")
+
+    def accept_appointment(self, id):
+        self._update_appointment(id, "")
+
+    def cancel_appointment(self, id):
+        self._update_appointment(id, "Cancelled")
+
+    def reject_appointment(self, id):
+        self._update_appointment(id, "Rejected")
+
+    def reset_appointment(self, id):
+        self._update_appointment(id, "Pending")
