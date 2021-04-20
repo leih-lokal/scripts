@@ -1,5 +1,6 @@
 import os
 from cloudant.client import CouchDB
+from cloudant.document import Document
 
 
 class CouchDbClient:
@@ -10,7 +11,15 @@ class CouchDbClient:
                          connect=True, auto_renew=True)
         self.db = client["leihlokal"]
 
+    def get_items(self, item_ids, fields=None):
+        return \
+        self.db.get_query_result({"$and": [{'type': {'$eq': "item"}}, {'id': {'$in': item_ids}}]}, raw_result=True,
+                                 fields=fields)["docs"]
+
     def get_status_of_items(self, item_ids):
-        result = self.db.get_query_result({"$and": [{'type': {'$eq': "item"}}, {'id': {'$in': item_ids}}]},
-                                        fields=["id", "status"], raw_result=True)
-        return result["docs"]
+        return self.get_items(item_ids, ["id", "status"])
+
+    def as_document(self, item_dict):
+        document = Document(self.db, item_dict["_id"])
+        document.update(item_dict)
+        return document

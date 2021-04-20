@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timedelta
-
 from couchdb_client import CouchDbClient
 from wp_client import WordpressClient
 
 logging.basicConfig(level=logging.INFO)
 couchdb_client = CouchDbClient()
+
 
 def all_items_instock(item_ids):
     item_status = couchdb_client.get_status_of_items(item_ids)
@@ -16,33 +16,38 @@ def all_items_instock(item_ids):
         return False
     for status in item_status:
         if status["status"] != "instock":
-            logging.info(f"item {status['id']} is {status['status']}")
+            logging.debug(f"item {status['id']} is {status['status']}")
             return False
     return True
 
+
 def reserve_items(items):
-    # TODO
-    pass
+    for item_doc in couchdb_client.get_items(items):
+        item_doc = couchdb_client.as_document(item_doc)
+        item_doc["status"] = "reserved"
+        item_doc.save()
+        logging.debug(f"Reserved item {item_doc['id']}")
+
+
+def appointment_to_string(appointment):
+    return f"appointment at {appointment['time_start'].strftime('%d.%m %H:%M')} with id {appointment['appointment_id']}"
+
 
 def should_auto_accept(appointment):
     if appointment["other_appointment"]:
-        logging.info(f"Did not auto accept appointment {str(appointment)} because customer has other appointment")
-        return False
+        return False, f"Did not auto accept {appointment_to_string(appointment)} because customer has other appointment"
 
     if appointment["return"]:
-        logging.info(f"Auto accepted appointment {str(appointment)} because customer returns items")
-        return True
+        return True, f"Auto accepted {appointment_to_string(appointment)} because customer returns items"
 
     if len(appointment["items"]) == 0:
-        logging.info(f"Did not auto accept appointment {str(appointment)} because no item ids could be found")
-        return False
+        return False, f"Did not auto accept {appointment_to_string(appointment)} because no item ids could be found"
 
     if all_items_instock(appointment["items"]):
-        logging.info(f"Auto accepted appointment {str(appointment)} because all items ({appointment['items']}) are instock")
-        return True
+        return True, f"Auto accepted {appointment_to_string(appointment)} because all items ({appointment['items']}) are instock"
     else:
-        logging.info(f"Did not auto accept appointment {str(appointment)} because not all items ({appointment['items']}) are instock")
-        return False
+        return False, f"Did not auto accept {appointment_to_string(appointment)} because not all items ({appointment['items']}) are instock"
+
 
 wp_client = WordpressClient()
 appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=7))
@@ -50,9 +55,15 @@ appointments = wp_client.get_appointments(datetime.today(), datetime.today() + t
 # new appointments which are not genehmigt / cancelled / attended yet
 appointments = list(filter(lambda appointment: appointment["status"] == "Pending", appointments))
 
+if len(appointments) == 0:
+    logging.info("No pending appointments")
+
 for appointment in appointments:
-    if should_auto_accept(appointment):
+    accepting_appointment, reason = should_auto_accept(appointment)
+    if accepting_appointment:
         reserve_items(appointment["items"])
         wp_client.accept_appointment(appointment["appointment_id"])
-        logging.info(f"Accepted items {appointment['items']} for appointment {appointment['appointment_id']}")
+        logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
         # TODO: insert appointments into db, so that can be displayed in frontend
+
+    logging.info(reason)
