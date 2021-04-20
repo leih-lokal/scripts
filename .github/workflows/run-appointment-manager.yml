@@ -2,8 +2,6 @@ name: Appointment Manager
 
 on:
   push:
-  schedule:
-    - cron: "*/5 * * * *"
 
 jobs:
   run:
