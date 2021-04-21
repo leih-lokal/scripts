@@ -61,9 +61,10 @@ if len(appointments) == 0:
 for appointment in appointments:
     accepting_appointment, reason = should_auto_accept(appointment)
     if accepting_appointment:
-        reserve_items(appointment["items"])
         wp_client.accept_appointment(appointment["appointment_id"])
-        logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
+        if len(appointment["items"]) > 0:
+            reserve_items(appointment["items"])
+            logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
         # TODO: insert appointments into db, so that can be displayed in frontend
 
     logging.info(reason)
