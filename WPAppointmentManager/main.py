@@ -71,6 +71,7 @@ if len(appointments) == 0:
 mail_client = MailClient()
 
 for appointment in appointments:
+    print(appointment['status'])
     accepting_appointment, reason = should_auto_accept(appointment)
     if accepting_appointment:
         wp_client.accept_appointment(appointment["appointment_id"])
@@ -80,8 +81,8 @@ for appointment in appointments:
         # TODO: insert appointments into db, so that can be displayed in frontend
     elif appointment['status']!='Bitte ansehen':
         wp_client.checked_appointment(appointment["appointment_id"])
-        subject = f"[!] No auto-accept: {appointment['customer_name']} @ {appointment['time_start']}"
-        message = "Der folgende Termin konnte nicht automatisch angenommen werden.\n"
+        subject = f"[!] Ansehen: {appointment['customer_name']} @ {appointment['time_start']}"
+        message = "Der folgende Termin konnte nicht automatisch angenommen werden. Bitte manuell im WordPress ansehen.\n"
         message += f"Grund: {reason}\n\n\n{pprint.pformat(appointment)}"
         mail_client.send(subject, message)
     logging.info(reason)
