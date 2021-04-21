@@ -1,9 +1,12 @@
 import logging
+import pprint
 from datetime import datetime, timedelta
 from couchdb_client import CouchDbClient
 from wp_client import WordpressClient
+from mail_client import MailClient
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger().setLevel(logging.DEBUG)
 couchdb_client = CouchDbClient()
 
 
@@ -53,13 +56,15 @@ def should_auto_accept(appointment):
 
 
 wp_client = WordpressClient()
-appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=7))
+appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=14))
 
 # new appointments which are not genehmigt / cancelled / attended yet
 appointments = list(filter(lambda appointment: appointment["status"] == "Pending", appointments))
 
 if len(appointments) == 0:
     logging.info("No pending appointments")
+
+mail_client = MailClient()
 
 for appointment in appointments:
     accepting_appointment, reason = should_auto_accept(appointment)
@@ -69,5 +74,11 @@ for appointment in appointments:
             reserve_items(appointment["items"])
             logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
         # TODO: insert appointments into db, so that can be displayed in frontend
-
+    else:
+        subject = f"[!] No auto-accept: {appointment['customer_name']} @ {appointment['time_start']}"
+        message = "Der folgende Termin konnte nicht automatisch angenommen werden.\n"
+        message += f"Grund: {reason}\n\n\n{pprint.pformat(appointment)}"
+        mail_client.send(subject, message)
     logging.info(reason)
+
+
