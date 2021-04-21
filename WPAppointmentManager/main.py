@@ -41,9 +41,6 @@ def appointment_to_string(appointment):
 
 def should_auto_accept(appointment):
 
-    if appointment['status']=='Bitte ansehen':
-        return False, f"Already checked before {appointment_to_string(appointment)}"
-
     if appointment["other_appointment"]:
         return False, f"Did not auto accept {appointment_to_string(appointment)} because customer has other appointment"
 
@@ -79,7 +76,7 @@ for appointment in appointments:
             reserve_items(appointment["items"])
             logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
         # TODO: insert appointments into db, so that can be displayed in frontend
-    elif appointment['status']!='Bitte ansehen':
+    else:
         wp_client.checked_appointment(appointment["appointment_id"])
         subject = f"[!] Ansehen: {appointment['customer_name']} @ {appointment['time_start']}"
         message = "Der folgende Termin konnte nicht automatisch angenommen werden. Bitte manuell im WordPress ansehen.\n"
