@@ -69,3 +69,6 @@ class WordpressClient:
 
     def reset_appointment(self, id):
         self._update_appointment(id, "Pending")
+
+    def checked_appointment(self, id):
+        self._update_appointment(id, "Bitte ansehen")

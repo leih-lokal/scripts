@@ -26,7 +26,7 @@ def _clean_data(appointment):
         "return": appointment['Ich mchte einen Gegenstand/Gegenstnde..'] == "zurückgeben",
         "other_appointment": appointment[
                                  'Haben Sie schon einen weiteren/anderen Termin fr diesen Tag gebucht?'] == "Ja",
-        "status": appointment["cancelled"], # Attended / Genehmigt / Zusammengelegt / Cancelled by customer / Rejected / Cancelled
+        "status": appointment["cancelled"], # Attended / Genehmigt / Zusammengelegt / Cancelled by customer / Rejected / Cancelled / Bitte ansehen
         "customer_name": appointment['Ihr Vor- und Zuname'],
         "customer_id": appointment['Ihre Nutzernummer (falls zur Hand)'],
         "customer_mail": appointment['Ihre Email'],
