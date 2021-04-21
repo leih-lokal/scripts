@@ -1,8 +1,7 @@
 name: Appointment Manager
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  push:
 
 jobs:
   run:
@@ -11,6 +10,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: appointment_manager
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
