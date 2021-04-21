@@ -24,9 +24,12 @@ def all_items_instock(item_ids):
 def reserve_items(items):
     for item_doc in couchdb_client.get_items(items):
         item_doc = couchdb_client.as_document(item_doc)
-        item_doc["status"] = "reserved"
-        item_doc.save()
-        logging.debug(f"Reserved item {item_doc['id']}")
+        if not item_doc["exists_more_than_once"]:
+            item_doc["status"] = "reserved"
+            item_doc.save()
+            logging.debug(f"Reserved item {item_doc['id']}")
+        else:
+            logging.debug(f"Did not reserve item {item_doc['id']} because it exists more than once")
 
 
 def appointment_to_string(appointment):
