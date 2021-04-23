@@ -10,19 +10,20 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
 logging.basicConfig(level=logging.INFO)
+
 
 class MailClient:
 
     def __init__(self):
         self._authenticate()
 
-
     def _authenticate(self):
         user = os.environ.get("MAIL_USER")
         password = os.environ.get("MAIL_PASSWORD")
         server = os.environ.get("MAIL_SERVER")
-        logging.debug('logging in to SMTP: {server} with mail {self.user}')
+        logging.debug(f'logging in to SMTP: {server} with mail {user}')
         server = smtplib.SMTP(server, timeout=15)
         server.starttls()
         server.login(user, password)

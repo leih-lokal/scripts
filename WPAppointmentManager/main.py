@@ -2,12 +2,15 @@ import logging
 import pprint
 from datetime import datetime, timedelta
 from couchdb_client import CouchDbClient
+from wc_client import WooCommerceClient
 from wp_client import WordpressClient
 from mail_client import MailClient
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
 couchdb_client = CouchDbClient()
+wc_client = WooCommerceClient()
+wp_client = WordpressClient()
 
 
 def all_items_instock(item_ids):
@@ -31,6 +34,8 @@ def reserve_items(items):
             item_doc["status"] = "reserved"
             item_doc.save()
             logging.debug(f"Reserved item {item_doc['id']}")
+            wc_client.update_item_status(item_doc["wc_id"], "outofstock")
+            logging.debug(f"Updated item {item_doc['id']} on WooCommerce")
         else:
             logging.debug(f"Did not reserve item {item_doc['id']} because it exists more than once")
 
@@ -40,7 +45,6 @@ def appointment_to_string(appointment):
 
 
 def should_auto_accept(appointment):
-
     if appointment["other_appointment"]:
         return False, f"Did not auto accept {appointment_to_string(appointment)} because customer has other appointment"
 
@@ -56,9 +60,7 @@ def should_auto_accept(appointment):
         return False, f"Did not auto accept {appointment_to_string(appointment)} because not all items ({appointment['items']}) are instock"
 
 
-wp_client = WordpressClient()
 appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=14))
-
 # new appointments which are not genehmigt / cancelled / attended yet
 appointments = list(filter(lambda appointment: appointment["status"] == "Pending", appointments))
 
@@ -68,14 +70,12 @@ if len(appointments) == 0:
 mail_client = MailClient()
 
 for appointment in appointments:
-    print(appointment['status'])
     accepting_appointment, reason = should_auto_accept(appointment)
     if accepting_appointment:
         wp_client.accept_appointment(appointment["appointment_id"])
         if len(appointment["items"]) > 0:
             reserve_items(appointment["items"])
             logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
-        # TODO: insert appointments into db, so that can be displayed in frontend
     else:
         wp_client.checked_appointment(appointment["appointment_id"])
         subject = f"[!] Ansehen: {appointment['customer_name']} @ {appointment['time_start']}"
@@ -83,5 +83,3 @@ for appointment in appointments:
         message += f"Grund: {reason}\n\n\n{pprint.pformat(appointment)}"
         mail_client.send(subject, message)
     logging.info(reason)
-
-
