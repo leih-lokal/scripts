@@ -73,7 +73,7 @@ for appointment in appointments:
     accepting_appointment, reason = should_auto_accept(appointment)
     if accepting_appointment:
         wp_client.accept_appointment(appointment["appointment_id"])
-        if len(appointment["items"]) > 0:
+        if not appointment["return"] and len(appointment["items"]) > 0:
             reserve_items(appointment["items"])
             logging.info(f"Reserved items {appointment['items']} for {appointment_to_string(appointment)}")
     else:
