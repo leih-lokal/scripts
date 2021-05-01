@@ -17,14 +17,12 @@ jobs:
         with:
           python-version: 3.9
       - name: Cache dependencies
-        id: cache-requirements
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
           key: pip-${{ hashFiles('WPAppointmentManager/requirements.txt') }}
       - name: Install dependencies
         working-directory: WPAppointmentManager
-        if: steps.cache-requirements.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
       - name: Run
         working-directory: WPAppointmentManager
