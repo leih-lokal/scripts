@@ -3,6 +3,7 @@ name: Appointment Manager
 on:
   schedule:
     - cron: "*/15 * * * *"
+  push:
 
 jobs:
   run:
