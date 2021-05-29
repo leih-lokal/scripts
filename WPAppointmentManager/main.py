@@ -28,12 +28,14 @@ def all_items_instock(item_ids):
             return False
     return True
 
+
 def update_item_status(item_doc, status_couchdb, status_wc):
     item_doc["status"] = status_couchdb
     item_doc.save()
     logging.debug(f"Set status of item {item_doc['id']} to {status_couchdb}")
     wc_client.update_item_status(item_doc["wc_id"], status_wc)
     logging.debug(f"Set status item {item_doc['id']} to {status_wc} on WooCommerce")
+
 
 def reserve_items(items):
     for item_doc in couchdb_client.get_items(items):
@@ -91,15 +93,25 @@ for appointment in pending_appointments:
 
 # reset status to instock for items that have been reserverd but not rented
 if datetime.now(pytz.timezone('Europe/Berlin')).time() > time(20, 0, tzinfo=pytz.timezone('Europe/Berlin')):
-    appointments_of_today = list(filter(lambda appointment: appointment["time_end"].date() == datetime.today().date(), appointments))
+    appointments_of_today = list(
+        filter(lambda appointment: appointment["time_end"].date() == datetime.today().date(), appointments))
+    appointments_after_today = list(
+        filter(lambda appointment: appointment["time_end"].date() != datetime.today().date(), appointments))
 
     # items that should have been rented today
     item_ids_reserved_for_today = []
     for appointment in appointments_of_today:
         item_ids_reserved_for_today += appointment["items"]
 
+    # items that are scheduled to be rented after today
+    item_ids_reserved_for_after_today = []
+    for appointment in appointments_after_today:
+        item_ids_reserved_for_after_today += appointment["items"]
+
     items_reserved_for_today = couchdb_client.get_items(item_ids_reserved_for_today, ["id", "wc_id", "status"])
-    items_still_reserved = list(filter(lambda item: item["status"] == "reserved", items_reserved_for_today))
+    items_still_reserved = list(
+        filter(lambda item: item["status"] == "reserved" and item["id"] not in item_ids_reserved_for_after_today,
+               items_reserved_for_today))
     items_still_reserved = list(map(lambda item: item["id"], items_still_reserved))
     reset_item_status_count = 0
     for item_doc in couchdb_client.get_items(items_still_reserved):
