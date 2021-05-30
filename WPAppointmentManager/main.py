@@ -1,6 +1,8 @@
 import logging
 import pprint
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
+import pytz
+
 from couchdb_client import CouchDbClient
 from wc_client import WooCommerceClient
 from wp_client import WordpressClient
@@ -27,15 +29,19 @@ def all_items_instock(item_ids):
     return True
 
 
+def update_item_status(item_doc, status_couchdb, status_wc):
+    item_doc["status"] = status_couchdb
+    item_doc.save()
+    logging.debug(f"Set status of item {item_doc['id']} to {status_couchdb}")
+    wc_client.update_item_status(item_doc["wc_id"], status_wc)
+    logging.debug(f"Set status item {item_doc['id']} to {status_wc} on WooCommerce")
+
+
 def reserve_items(items):
     for item_doc in couchdb_client.get_items(items):
         item_doc = couchdb_client.as_document(item_doc)
         if not item_doc["exists_more_than_once"]:
-            item_doc["status"] = "reserved"
-            item_doc.save()
-            logging.debug(f"Reserved item {item_doc['id']}")
-            wc_client.update_item_status(item_doc["wc_id"], "outofstock")
-            logging.debug(f"Updated item {item_doc['id']} on WooCommerce")
+            update_item_status(item_doc, "reserved", "outofstock")
         else:
             logging.debug(f"Did not reserve item {item_doc['id']} because it exists more than once")
 
@@ -62,14 +68,15 @@ def should_auto_accept(appointment):
 
 appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=14))
 # new appointments which are not genehmigt / cancelled / attended yet
-appointments = list(filter(lambda appointment: appointment["status"] == "Pending", appointments))
+pending_appointments = list(filter(lambda appointment: appointment["status"] == "Pending", appointments))
 
-if len(appointments) == 0:
+if len(pending_appointments) == 0:
     logging.info("No pending appointments")
 
 mail_client = MailClient()
 
-for appointment in appointments:
+# auto accept appointments
+for appointment in pending_appointments:
     accepting_appointment, reason = should_auto_accept(appointment)
     if accepting_appointment:
         wp_client.accept_appointment(appointment["appointment_id"])
@@ -83,3 +90,34 @@ for appointment in appointments:
         message += f"Grund: {reason}\n\n\n{pprint.pformat(appointment)}"
         mail_client.send(subject, message)
     logging.info(reason)
+
+# reset status to instock for items that have been reserverd but not rented
+if datetime.now(pytz.timezone('Europe/Berlin')).time() > time(20, 0, tzinfo=pytz.timezone('Europe/Berlin')):
+    appointments_of_today = list(
+        filter(lambda appointment: appointment["time_end"].date() == datetime.today().date(), appointments))
+    appointments_after_today = list(
+        filter(lambda appointment: appointment["time_end"].date() != datetime.today().date(), appointments))
+
+    # items that should have been rented today
+    item_ids_reserved_for_today = []
+    for appointment in appointments_of_today:
+        item_ids_reserved_for_today += appointment["items"]
+
+    # items that are scheduled to be rented after today
+    item_ids_reserved_for_after_today = []
+    for appointment in appointments_after_today:
+        item_ids_reserved_for_after_today += appointment["items"]
+
+    items_reserved_for_today = couchdb_client.get_items(item_ids_reserved_for_today, ["id", "wc_id", "status"])
+    items_still_reserved = list(
+        filter(lambda item: item["status"] == "reserved" and item["id"] not in item_ids_reserved_for_after_today,
+               items_reserved_for_today))
+    items_still_reserved = list(map(lambda item: item["id"], items_still_reserved))
+    reset_item_status_count = 0
+    for item_doc in couchdb_client.get_items(items_still_reserved):
+        item_doc = couchdb_client.as_document(item_doc)
+        update_item_status(item_doc, "instock", "instock")
+        reset_item_status_count += 1
+
+    if reset_item_status_count > 1:
+        logging.info(f"Set status to 'instock' for {reset_item_status_count} reserved items")
