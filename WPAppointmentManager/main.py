@@ -31,6 +31,7 @@ def all_items_instock(item_ids):
 
 def update_item_status(item_doc, status_couchdb, status_wc):
     item_doc["status"] = status_couchdb
+    item_doc["last_update"] = int(datetime.now().timestamp() * 1000)
     item_doc.save()
     logging.debug(f"Set status of item {item_doc['id']} to {status_couchdb}")
     wc_client.update_item_status(item_doc["wc_id"], status_wc)
