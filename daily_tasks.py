@@ -278,13 +278,13 @@ def check_website_status(store):
 
     print('\n------- Online reserviert, schau bitte ob Reservierung noch aktuell-------')
     for item in curr_reserved_items:
-        print(item)
+        print(f'Am {item.last_update} reserviert: {item}')
 
     print('\n------- [INFO] Als "in Reparatur" markiert -------')
     for item in curr_inrepair_items:
         if item.id in available_wc:
             print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar')
-        print(f'{item} online nicht verfügbar')
+        print(f'{item} online nicht verfügbar seit {item.last_update}')
 
 
     print('\n' + '-'*55)
