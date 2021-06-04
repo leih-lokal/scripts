@@ -284,7 +284,7 @@ def check_website_status(store):
     for item in curr_inrepair_items:
         if item.id in available_wc:
             print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar')
-        print(f'{item} online nicht verfügbar seit {item.last_update}')
+        print(f'{item} online nicht verfügbar seit {item.last_update if hasattr(item, "last_update") else ""}')
 
 
     print('\n' + '-'*55)
