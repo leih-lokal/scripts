@@ -5,12 +5,13 @@ Created on Thu Jan 14 18:48:12 2021
 @author: Simon Kern
 """
 
+import sys; sys.path.append('.');sys.path.append('..')
 import re
 import logging
 import time
 from datetime import datetime
-from mail_client import MailClient
 from leihlokal import LeihLokal
+from mail_client import MailClient
 from collections import defaultdict
 
 logging.basicConfig(level=logging.DEBUG)
