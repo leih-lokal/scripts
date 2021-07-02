@@ -38,7 +38,7 @@ können Sie ggf. die Ausleihe noch einmal verlängern. Sollten Sie den Gegenstan
 nicht mehr benötigen, freuen sich die nachfolgenden AusleiherInnen über eine zeitige Rückgabe.
 
 Sollte es sich heute um keinen Öffnungstag handeln, geben Sie {'die Gegenstände' if several else 'den Gegenstand'}\
-einfach am darauffolgenden Öffnungstag ab. Weitere Informationen finden Sie unter bitly.com/leihlokal
+einfach am darauffolgenden Öffnungstag ab. Weitere Informationen finden Sie unter https://bitly.com/leihlokal
 
 Da wir uns komplett über Spenden finanzieren, freuen wir uns über jede Art der Unterstützung!
 
