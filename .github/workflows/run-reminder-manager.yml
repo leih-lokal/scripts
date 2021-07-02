@@ -20,13 +20,12 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: pip-${{ hashFiles('WPAppointmentManager/requirements.txt') }}
+          key: pip-${{ hashFiles('ReturnReminderManager/requirements.txt') }}
       - name: Install dependencies
-        working-directory: WPAppointmentManager
+        working-directory: ReturnReminderManager
         run: pip install -r requirements.txt
       - name: Run
-        working-directory: .
-        run: python main.py
+        run: python ReturnReminderManager/main.py
         env:
           COUCHDB_HOST: ${{ secrets.COUCHDB_HOST }}
           COUCHDB_PASSWORD: ${{ secrets.COUCHDB_PASSWORD }}
