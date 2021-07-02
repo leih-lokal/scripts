@@ -86,7 +86,7 @@ if __name__ == '__main__':
             ids = ', '.join([str(rental.item_id) for rental in rentals])
             email_msg = get_reminder_template(customer, rentals)
             subject = f"[leih.lokal] Rückgabe von {ids} heute fällig"
-            mail_client.send(customer.email + "x$", subject, email_msg)
+            mail_client.send(customer.email, subject, email_msg)
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
 
