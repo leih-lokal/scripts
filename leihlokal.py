@@ -2,8 +2,9 @@
 """
 Created on Thu Jan 14 18:48:12 2021
 
-@author: Simon
+@author: Simon Kern
 """
+import os
 import traceback
 import logging as log
 from datetime import datetime, date
@@ -21,12 +22,12 @@ class Object:
             # maybe its a date in milliseconds?
             value = abs(value)
             if value>1500000000000 and value<2000000000000:
-                log.info(f'{key} is millsecond-timestamp: {value}')
+                # log.info(f'{key} is millsecond-timestamp: {value}')
                 return datetime.fromtimestamp(value/1000).date()
 
             # maybe its a date in seconds?
             elif value>1500000000 and value<2000000000:
-                log.info(f'{key} is second-timestamp: {value}')
+                # log.info(f'{key} is second-timestamp: {value}')
                 return datetime.fromtimestamp(value).date()
 
         # else just leave the value in the format as it is
@@ -96,8 +97,14 @@ class Rental(Object):
             print(repr(e), str(e))
 
 class LeihLokal(object):
-    def __init__(self, user='user', password='password', url='http://localhost:5984'):
+    def __init__(self, user=None, password=None, url=None):
+
+        if user is None: user = os.environ.get('COUCHDB_USER', 'user')
+        if password is None: password = os.environ.get('COUCHDB_PASSWORD', 'password')
+        if url is None: url = os.environ.get('COUCHDB_HOST', 'http://localhost:5984')
+
         print(f'connecting to {url}')
+
         couchdb = CouchDB(user, password, url=url, connect=True, auto_renew=True)
 
         rentals = []
