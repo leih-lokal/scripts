@@ -1,4 +1,4 @@
-name: Appointment Manager
+name: Return Reminder Manager
 
 on:
   schedule:
