@@ -9,7 +9,7 @@ import re
 import logging
 import time
 from datetime import datetime
-from ReturnReminderManager.mail_client import MailClient
+from mail_client import MailClient
 from leihlokal import LeihLokal
 from collections import defaultdict
 
