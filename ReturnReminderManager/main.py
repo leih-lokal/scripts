@@ -94,9 +94,9 @@ if __name__ == '__main__':
             errors.append(f'{customer.email} of {customer} is not a valid email adress')
             continue
         try:
-            ids = ', '.join([str(rental.item_id) for rental in rentals])
+            names = ', '.join([str(rental.item.name) for rental in rentals])
             email_msg = get_reminder_template(customer, rentals)
-            subject = f"[leih.lokal] Rückgabe morgen fällig ({ids})"
+            subject = f"[leih.lokal] Rückgabe morgen fällig ({names})"
             mail_client.send(customer.email, subject, email_msg)
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
