@@ -20,7 +20,8 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 
 def get_reminder_template(customer, rentals):
-    today = datetime.now(pytz.timezone('Europe/Berlin'))
+    newline = '\t\n'
+    today = datetime.now(pytz.timezone('Europe/Berlin')).date()
     several = len(rentals)>1
     items = [rental.item for rental in rentals]
     items_str = ", ".join([f"{item.name} (#{item.id})" for item in items])
@@ -59,9 +60,9 @@ Mach doch auch mit und hilf uns die Welt ein bisschen nachhaltiger zu gestalten!
 Diese Email wurde automatisch generiert. Sie kann daher Fehler enthalten. \
 Wir bitten dies zu entschuldigen.
 //
-Local: {datetime.now()}
-Berlin: {today}
-Rentals due: {rentals}
+Today: {today}
+Rentals due: 
+{newline.join([str(r) for r in rentals])}
 """
     return s
 
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         try:
             ids = ', '.join([str(rental.item_id) for rental in rentals])
             email_msg = get_reminder_template(customer, rentals)
-            subject = f"[leih.lokal] Rückgabe von {ids} morgen fällig"
+            subject = f"[leih.lokal] Rückgabe morgen fällig ({ids})"
             mail_client.send(customer.email, subject, email_msg)
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
