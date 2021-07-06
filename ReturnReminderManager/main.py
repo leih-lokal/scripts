@@ -20,6 +20,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 
 def get_reminder_template(customer, rentals):
+    today = datetime.now(pytz.timezone('Europe/Berlin'))
     several = len(rentals)>1
     items = [rental.item for rental in rentals]
     items_str = ", ".join([f"{item.name} (#{item.id})" for item in items])
@@ -51,14 +52,16 @@ Telefon: 0721/ 4700 4551
 http://www.buergerstiftung-karlsruhe.de/leihlokal/
 
 //
-
 Das leih.lokal ist eine ehrenamtliches Projekt von der Bürgerstiftung Karlsruhe.
 Wir arbeiten komplett spendenfinanziert und freuen uns daher über Ihre Spende.
 Mach doch auch mit und hilf uns die Welt ein bisschen nachhaltiger zu gestalten!
-
-// Diese Email wurde automatisch generiert. Sie kann daher Fehler enthalten. \
+// 
+Diese Email wurde automatisch generiert. Sie kann daher Fehler enthalten. \
 Wir bitten dies zu entschuldigen.
-
+//
+Local: {datetime.now()}
+Berlin: {today}
+Rentals due: {rentals}
 """
     return s
 
