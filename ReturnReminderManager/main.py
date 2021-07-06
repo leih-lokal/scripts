@@ -72,7 +72,8 @@ if __name__ == '__main__':
     mail_client = MailClient()
 
     # not sure how well this plays for the github timezone?
-    today = datetime.now().date()
+    import pytz
+    today = datetime.now(pytz.timezone('Europe/Berlin')).date()
     rentals_due_today = leihlokal.filter_rentals(lambda x: x.to_return_on==today)
 
     # first concatenate all due items that belong to the same user
