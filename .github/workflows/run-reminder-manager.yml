@@ -1,8 +1,9 @@
 name: Return Reminder Manager
 
 on:
+  push:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "0 12 * * *"
 
 jobs:
   run:
