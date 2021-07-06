@@ -9,7 +9,9 @@ and creates an overview for the current day in XLS format to print out
 """
 import os
 import re
+import datetime
 import pandas as pd
+import datetime
 from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
 import json
@@ -17,10 +19,35 @@ import io
 from mechanize import Browser #pip install mechanize
 import leihlokal
 import itertools
+import holidays
 
 leihlokal = leihlokal.LeihLokal()
 customers = leihlokal.customers
 items = leihlokal.items
+rentals = leihlokal.rentals
+
+def calculate_opening_days_since(date):
+    BW_holidays = holidays.CountryHoliday('DE', prov='BW')
+    today = datetime.datetime.now().date()
+    opening_days = 0
+    for tday in range(1, (today-date).days):
+        day = today - datetime.timedelta(days=tday)
+        if day.weekday() in [0,3,5] and not day in BW_holidays:
+            opening_days += 1
+    return opening_days
+
+def get_days_too_late_by_id(ids_string):
+    ids = [int(x) for x in re.findall('[0-9]+', ids_string)]
+    if len(ids)==0: return '?€'
+    today = datetime.datetime.now().date()
+    active_rentals = [r for r in rentals if r.returned_on==0]
+    for rental in active_rentals:
+        if rental.item_id in ids:
+            if rental.to_return_on < today:
+                return calculate_opening_days_since(rental.to_return_on)
+            else:
+                return 0
+    return '?'
 
 def get_customer_id_by_name(full_name):
     found = 0
@@ -186,6 +213,19 @@ if __name__=='__main__':
             deposit = '?€'
         deposit_infered.append(deposit)
     df_selected.insert(5, 'Pfand', deposit_infered)
+
+    opening_days_missed = []
+    for ids_string, mode in zip(df_selected['Artikelnummer(n)'], df_selected['Ich möchte einen Gegenstand/Gegenstände..']):
+        if mode=='abholen':
+            opening_days_since = ''
+        else:
+            try:
+                opening_days_since = get_days_too_late_by_id(ids_string)
+            except:
+                opening_days_since = '?'
+        opening_days_missed.append(opening_days_since)
+    df_selected.insert(9, 'Tage zu spät', opening_days_missed)
+
 
     df_selected.drop('app_date_1', axis=1, inplace=True)
     df_selected['Ihr Vor- und Zuname'] = df_selected['Ihr Vor- und Zuname'] + ' ('+ df_selected['Ihre Nutzernummer (falls zur Hand)'].astype(str) + ')'
