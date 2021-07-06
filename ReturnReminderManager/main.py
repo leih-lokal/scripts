@@ -7,9 +7,10 @@ Created on Thu Jan 14 18:48:12 2021
 
 import sys; sys.path.append('.');sys.path.append('..')
 import re
+import pytz
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from leihlokal import LeihLokal
 from mail_client import MailClient
 from collections import defaultdict
@@ -28,9 +29,9 @@ Liebe/r {customer.firstname} {customer.lastname},
 wir hoffen, Sie hatten viel Freude an {'den' if several else 'dem'} bei uns geliehenen \
 {'Gegenständen' if several else 'Gegenstand'}!
 
-Heute wird die Rückgabe {'der' if several else 'des'} \
+Morgen wird die Rückgabe {'der' if several else 'des'} \
 {'Gegenstände' if several else 'Gegenstands'}: "{items_str}" fällig. \
-Wir bitten Sie, {'die Gegenstände' if several else 'den Gegenstand'} heute zu \
+Wir bitten Sie, {'die Gegenstände' if several else 'den Gegenstand'} morgen zu \
 den Öffnungszeiten zurück zu bringen.
 
 Falls die maximale Leihdauer von drei Wochen noch nicht erreicht ist, \
@@ -38,7 +39,7 @@ können Sie ggf. die Ausleihe noch einmal per Telefon oder Mail verlängern. \
 Sollten Sie den Gegenstand jedoch nicht mehr benötigen, freuen sich die nachfolgenden \
 AusleiherInnen über eine zeitige Rückgabe.
 
-Sollte es sich heute um keinen Öffnungstag handeln, geben Sie {'die Gegenstände' if several else 'den Gegenstand'}\
+Sollte es sich morgen um keinen Öffnungstag handeln, geben Sie {'die Gegenstände' if several else 'den Gegenstand'}\
 einfach am darauffolgenden Öffnungstag ab. Weitere Informationen finden Sie unter https://bitly.com/leihlokal
 
 Liebe Grüße, 
@@ -72,9 +73,8 @@ if __name__ == '__main__':
     mail_client = MailClient()
 
     # not sure how well this plays for the github timezone?
-    import pytz
-    today = datetime.now(pytz.timezone('Europe/Berlin')).date()
-    rentals_due_today = leihlokal.filter_rentals(lambda x: x.to_return_on==today)
+    tomorrow = datetime.now(pytz.timezone('Europe/Berlin')).date() + timedelta(days=1)
+    rentals_due_today = leihlokal.filter_rentals(lambda x: x.to_return_on==tomorrow)
 
     # first concatenate all due items that belong to the same user
     reminders = defaultdict(list)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         try:
             ids = ', '.join([str(rental.item_id) for rental in rentals])
             email_msg = get_reminder_template(customer, rentals)
-            subject = f"[leih.lokal] Rückgabe von {ids} heute fällig"
+            subject = f"[leih.lokal] Rückgabe von {ids} morgen fällig"
             mail_client.send(customer.email, subject, email_msg)
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
