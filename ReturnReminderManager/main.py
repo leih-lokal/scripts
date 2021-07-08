@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     # not sure how well this plays for the github timezone?
     tomorrow = datetime.now(pytz.timezone('Europe/Berlin')).date() + timedelta(days=1)
-    rentals_due_today = leihlokal.filter_rentals(lambda x: x.to_return_on==tomorrow)
+    rentals_due_today = leihlokal.filter_rentals(lambda x: x.to_return_on==tomorrow and (not hasattr(x, 'to_return_on') or x.to_return_on==''))
 
     # first concatenate all due items that belong to the same user
     reminders = defaultdict(list)
