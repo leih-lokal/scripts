@@ -4,8 +4,9 @@ settings.json
 .csv
 .json
 /products
-
-
+*.db
+locations.json
+import.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
