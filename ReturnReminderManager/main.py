@@ -68,7 +68,7 @@ Rentals due:
 
 def valid_email(email):
   if not isinstance(email, str): return False
-  return bool(re.search(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", email))
+  return bool(re.search(r"^.+@(\[?)[a-zA-Z0-9-.]+.([a-zA-Z]{2,3}|[0-9]{1,3})(]?)$", email))
 
 
 if __name__ == '__main__':
