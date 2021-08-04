@@ -8,6 +8,7 @@ import os
 import base64
 import logging
 import smtplib
+from email.utils import formatdate
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -35,6 +36,7 @@ class MailClient:
         msg['From'] = base64.b64decode(b'bm9yZXBseUBidWVyZ2Vyc3RpZnR1bmcta2FybHNydWhlLmRl').decode()
         msg['To'] = self.mail_to
         msg['Subject'] = subject
+        msg["Date"] = formatdate(localtime=True)
 
         # add in the message body
         msg.attach(MIMEText(message, 'plain'))
