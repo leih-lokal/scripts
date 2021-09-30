@@ -37,7 +37,6 @@ def load_resample(image_file, size=1080):
     return image_stream, image
 
 #%%
-@profile
 def make_slide(prs, image_file, info):
     
     
@@ -61,9 +60,9 @@ def make_slide(prs, image_file, info):
     if portrait:
         image = slide.shapes.add_picture(image_stream, 0, 0, height=height-margin*4)
         image.top = margin*2
-        image.left = height//2-image.width//2
+        image.left = height//2-image.width//2+margin*3
     else:
-        image = slide.shapes.add_picture(image_stream, 0, 0, width=height-margin*4)
+        image = slide.shapes.add_picture(image_stream, 0, 0, height=height-margin*4)
         image.top = height//2-image.height//2
         image.left = margin*2
     image_stream.close()
@@ -89,31 +88,29 @@ def make_slide(prs, image_file, info):
     beschreibung = info['descriptions']
     
     
-    textlen = len(info['descriptions']) + (65* (len(info['titles'])//35))
-    text_scale_factor = 0.9
+    textlen = len(info['descriptions']) + (60* (len(info['titles'])//35))
+    text_scale_factor = 0.7
 
     if textlen>520:
-        boxheight = Pt(1)*text_scale_factor*62
+        boxheight = Pt(10)*text_scale_factor*60
     elif textlen>460:
-        boxheight = Pt(1)*text_scale_factor*58
+        boxheight = Pt(10)*text_scale_factor*57
     elif textlen>400:
-        boxheight = Pt(1)*text_scale_factor*55
-    elif textlen>320:
-        boxheight = Pt(1)*text_scale_factor*50
-    elif textlen>265:
-        boxheight = Pt(1)*text_scale_factor*46
-    elif textlen>200:
-        boxheight = Pt(1)*text_scale_factor*42
-    elif textlen>120:
-        boxheight = Pt(1)*text_scale_factor*37
-    elif textlen>65:
-        boxheight = Pt(1)*text_scale_factor*32
+        boxheight = Pt(10)*text_scale_factor*55
+    elif textlen>300:
+        boxheight = Pt(10)*text_scale_factor*50
+    elif textlen>270:
+        boxheight = Pt(10)*text_scale_factor*46
+    elif textlen>180:
+        boxheight = Pt(10)*text_scale_factor*42
+    elif textlen>110:
+        boxheight = Pt(10)*text_scale_factor*37
+    elif textlen>56:
+        boxheight = Pt(10)*text_scale_factor*32
     else:
-        boxheight = Pt(1)*text_scale_factor*25
-        
-    print(textlen)
-    
-    textbox = slide.shapes.add_textbox(height+margin, margin , width-height-margin*2, boxheight)
+        boxheight = Pt(10)*text_scale_factor*28
+            
+    textbox = slide.shapes.add_textbox(height+margin*6, height-boxheight-margin*2 , width-height-margin*7, boxheight)
     textbox.line.fill.solid()
     textbox.fill.solid()
     textbox.fill.fore_color.rgb = RGBColor(255,255,255)
@@ -124,41 +121,64 @@ def make_slide(prs, image_file, info):
     textbox.text_frame.margin_right = int(width*0.01)
     textbox.text_frame.word_wrap=True
     
-    pr = textbox.text_frame.paragraphs[0]
     
+    
+    # BSKE LOGO
+ 
+    logo_box = slide.shapes.add_textbox(width-margin*10, margin, height=margin*9, width=margin*9)
+    logo_box.line.fill.solid()
+    logo_box.fill.solid()
+    logo_box.fill.fore_color.rgb = RGBColor(255,255,255)
+    logo_box.line.width = 50
+    logo = slide.shapes.add_picture('./logo/stiftung.png',logo_box.left+margin/2, logo_box.top+margin/2, height=logo_box.height-margin)
+    poster = slide.shapes.add_picture('./logo/ausstellung_corona.png',logo_box.left,logo_box.top+logo_box.height+margin/2, width=logo_box.width)
+    einreichung = slide.shapes.add_textbox(poster.left, poster.top+poster.height+margin/2, height=margin*2, width=poster.width)
+    einreichung.line.fill.solid()
+    einreichung.fill.solid()
+    einreichung.fill.fore_color.rgb = RGBColor(255,255,255)
+    pr = einreichung.text_frame.paragraphs[0]
+    pr.text = 'Sie sehen hier: \nAlle Einreichungen.'
+    pr.font.name = 'TT Norms Medium'
+    pr.font.size = Pt(20)
+    pr.alignment = PP_ALIGN.CENTER
+    
+    if info.Platz<=20:
+        gewinner = slide.shapes.add_picture('./logo/gewinner.png',-margin*1.5, margin*6, height=logo_box.height-margin)
+        gewinner.rotation=-45
     
     ## TITLE
+    pr = textbox.text_frame.paragraphs[0]
     line = pr.add_run()
     line.text = title + '\n'
     line.font.name = 'TT Norms Medium' # install from the web if necessary
-    line.font.size = Pt(4.5*text_scale_factor)
+    line.font.size = Pt(45*text_scale_factor)
     # line.font.bold = True
     
     ## EMPTY LINE
     line = pr.add_run()
     line.text = '\n'
     line.font.name = 'TT Norms Medium' # install from the web if necessary
-    line.font.size = Pt(1)
+    line.font.size = Pt(10)
     # line.font.bold = True
     
     ## NAME + AGE
     line = pr.add_run()
     line.text = name
     line.font.name = 'TT Norms Medium' # install from the web if necessary
-    line.font.size = Pt(3*text_scale_factor)
+    line.font.size = Pt(30*text_scale_factor)
     line.line_spacing = 1.2
 
     line = pr.add_run()
     line.text = f', {alter}\n'
     line.font.name = 'TT Norms Medium' # install from the web if necessary
-    line.font.size = Pt(3*text_scale_factor)
+    line.font.size = Pt(30*text_scale_factor)
     line.line_spacing = 1.2    
     
     ## BACKGROUND
     line = pr.add_run()
     line.text = f'{hintergrund} {textlen}\n'
     line.font.name = 'TT Norms Medium' # install from the web if necessary
-    line.font.size = Pt(3*text_scale_factor)
+    line.font.size = Pt(30*text_scale_factor)
     line.line_spacing = 0
     
     ## DESCRIPTION
@@ -166,7 +186,7 @@ def make_slide(prs, image_file, info):
     pr.alignment = PP_ALIGN.JUSTIFY
     pr.text = beschreibung
     pr.font.name = 'TT Norms Regular' # install from the web if necessary
-    pr.font.size = Pt(3*text_scale_factor)
+    pr.font.size = Pt(30*text_scale_factor)
     pr.line_spacing = 1  
         
     return prs
@@ -187,8 +207,8 @@ if __name__ == '__main__':
     # stop
 
     # approximately the display size
-    width = Pt(192)
-    height = Pt(108)
+    width = Pt(192)*10
+    height = Pt(108)*10
     
     prs = Presentation()
     prs.slide_width = width

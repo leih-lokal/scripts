@@ -105,7 +105,7 @@ def get_locations(customers):
                 print(f'wait: {t} sec')
                 time.sleep(t)
         if location is None:
-            print(street, nr, 'not found')
+            print(street, nr, f'not found ({customer.id})')
             continue
         locations.append(location)
     return locations
@@ -145,10 +145,10 @@ if __name__ == '__main__':
     customers = sorted(store.customers.values(), key=lambda x: x.registration_date)
     rentals = store.rentals
     items = sorted(store.items.values(), key=lambda x: x.id)
-    stop
+    
     #%% create heatmap
     locations = get_locations(customers)
-
+    
     #%% make heatmap with animation
 
     def make_heatmap(locations, filename='heatmap.html', overlay=''):
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         
         # Saves the map to heatmap.hmtl
         hmap.save(filename)
-        hti = Html2Image()
+        hti = Html2Image(custom_flags=['--virtual-time-budget=5'])
 
         png_file = hti.screenshot(url=filename, save_as=os.path.basename(filename) + '.png')[0]
         shutil.move(png_file, filename + '.png')
@@ -188,8 +188,8 @@ if __name__ == '__main__':
                         os.path.abspath(f'./plots/heatmap_{i:04d}.html'), overlay=f'{dates[i]}') for i, s in enumerate(steps))
 
     duration = ([0.3]*(len(pngs)-1)) + [5]
-    imageio.mimsave('./plots/heatmap.gif', pngs, format='GIF-FI', duration=duration, palettesize=256)
-
+    imageio.mimsave('./plots/heatmap.gif', pngs, format='GIF-FI', duration=duration, palettesize=256, quantizer='nq')
+    
     #%% Number of customers over the years
     first = list(customers)[0].registration_date
     last = list(customers)[-1].registration_date
@@ -211,9 +211,9 @@ if __name__ == '__main__':
         plt.plot([*plt.xlim()], [*plt.ylim()],'--',  c='gray', alpha=0.8)
         # plt.xlim(xlim)
         plt.xlabel('Monat', {'fontsize':16})
-        plt.ylabel('Anzahl Kunden', {'fontsize':16})
+        plt.ylabel('Anzahl Ausleiher:innen', {'fontsize':16})
         plt.legend(['Kunden', 'Linearer Anstieg'])
-        plt.title('Anzahl an Kunden seit Eröffnung', {'fontsize':20})
+        plt.title('Zuwachs an Ausleiher:innen seit Eröffnung', {'fontsize':20})
         plt.xticks(rotation=25)
         plt.tight_layout()
         plt.pause(0.01)
@@ -223,7 +223,7 @@ if __name__ == '__main__':
     duration = ([0.3]*(len(pngs)-1)) + [5]
     imageio.mimsave('./plots/kunden.gif', pngs, format='GIF-FI', duration=duration, palettesize=256)
 
-    stop
+    # stop
 
     #%% Gesamte Anzahl der Ausleihen
     rental_dates = [r.rented_on for r in rentals if hasattr(r, 'rented_on') and isinstance(r.rented_on, datetime.date)]
@@ -307,3 +307,6 @@ if __name__ == '__main__':
     plt.savefig('./plots/per_gegenstand.png')
     # tops and flops
     topsflops = sorted([i for i in items if i.wc_url!=''], key=lambda x:len(x.rentals))
+    x = pd.DataFrame({'Name':[x.name for x in items], 'Anzahl':[len(x.rentals) for x in items]})
+    x=x.sort_values('Anzahl', ascending=False)
+    
