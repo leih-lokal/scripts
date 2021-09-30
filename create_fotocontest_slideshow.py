@@ -176,7 +176,7 @@ def make_slide(prs, image_file, info):
     
     ## BACKGROUND
     line = pr.add_run()
-    line.text = f'{hintergrund} {textlen}\n'
+    line.text = f'{hintergrund}\n'
     line.font.name = 'TT Norms Medium' # install from the web if necessary
     line.font.size = Pt(30*text_scale_factor)
     line.line_spacing = 0
@@ -213,8 +213,8 @@ if __name__ == '__main__':
     prs = Presentation()
     prs.slide_width = width
     prs.slide_height = height
-    fun = lambda x:len(descriptions.loc[int(ospath.basename(x)[:3])]['descriptions'])+(65 * (len(descriptions.loc[int(ospath.basename(x)[:3])]['titles'])//35))
-    images.sort(key=fun)
+    # fun = lambda x:len(descriptions.loc[int(ospath.basename(x)[:3])]['descriptions'])+(65 * (len(descriptions.loc[int(ospath.basename(x)[:3])]['titles'])//35))
+    # images.sort(key=fun)
     
     for image_file in tqdm(images, desc='writing pptx'):
         try:
