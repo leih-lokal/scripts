@@ -9,12 +9,13 @@ this file might not work if the layout of the website is changed too much
 @author: skjerns
 """
 import os
+import random
+from leihlokal import LeihLokal
 from joblib import Parallel, delayed
 from pptx import Presentation
 from tqdm import tqdm
 import requests
 import time
-from bs4 import BeautifulSoup
 from scipy import misc
 import io
 from pptx.util import Cm, Pt
@@ -25,6 +26,7 @@ sortiment_url = 'https://www.buergerstiftung-karlsruhe.de/leihlokal/sortiment/?p
 
 def download_image(url, code):
     file = os.path.join('products', f'{code}.jpg')
+    if os.path.exists(file): return True
     c = get(url)
     with open(file, 'wb') as f:
         f.write(c.content)
@@ -40,39 +42,10 @@ def get(url, sleep=0.5):
         return get(url, sleep*2)
     return c
     
-def get_page_numbers():
-    """retrieve the leihlokal sortiment and see how many pages there are"""
-    c = get(sortiment_url)
-    assert c.ok, f'Could not get url: {c.reason}'
-    c = BeautifulSoup(c.content, 'html.parser')
-    n_pages = (c.find_all('a', attrs={'class':'page-numbers'})[-2].text)
-    return int(n_pages)
 
 def jpg2int(jpg_bytes):
     return misc.imread(io.BytesIO(jpg_bytes))
 
-def get_leihlokaldata():
-    # this is the url that we use to fetch the
-    n_pages = get_page_numbers()
-    request_urls = [sortiment_url + str(i) for i in range(1, n_pages+1)]
-    
-    # we request 8 pages at once and then 200ms delay
-    res = Parallel(n_jobs=8, prefer='threads')(delayed(get)(url) for url in tqdm(request_urls, desc='downloading info'))
-
-    # get all <li> tags that are of class 'product'
-    products = []
-    for page in res:
-        soup = BeautifulSoup(page.content, 'html.parser')
-        products += soup.find_all('li', attrs={'class':'product'})
-    
-    # extract names, urls and image-urls
-    names = [p.find_all('h2')[0].text for p in products]
-    urls = [p.a.attrs['href'] for p in products]
-    images_urls = [p.a.img.attrs['srcset'].split(', ')[-1].split(' ')[0] for p in products]
-    images_urls = ['-'.join(url.split('-')[:-1])+url[-4:] if 'x' in url else url for url in images_urls]
-    codes = [p.find_all('a')[-1].attrs['data-product_sku'] for p in products]
-
-    return names, codes, urls, images_urls
 
 # Start creating the power point slides.
 #%%
@@ -123,16 +96,16 @@ def make_slide(code):
     text_name.left = (prs.slide_width//2 + image.width//2)+width//66
     text_name.top = image.top-Pt(21)
     pr = text_name.text_frame.add_paragraph()
-    pr.text = 'Über 600 Gegenstände\naus Garten, Haushalt,\n' +\
-              'Küche Kinder und \nHeimwerker\n\n' +\
+    pr.text = f'{len(codes)} Gegenstände\naus Garten, Küche,\n' +\
+              'Kinder und \nHeimwerken\n\n' +\
               'Kein Mitgliedsbeitrag\nKeine Leihgebühr\nGegen Pfand ausleihen\n\n'+\
-              'Unser Sortiment:'
+              'Unser Sortiment online:'
               # 'Anmelden, Ausleihen, \nFreuen!'
     pr.font.size = Pt(19)
     pr.font.name = 'TeXGyreAdventor' # install from the web if necessary
     pr.line_spacing=1.2
     pr = text_name.text_frame.add_paragraph()
-    pr.text = 'bit.ly/leihlokal'
+    pr.text = 'leihlokal-ka.de'
     pr.font.size = Pt(19)
     pr.font.name = 'TeXGyreAdventor' # install from the web if necessary
     pr.line_spacing=1.2
@@ -150,7 +123,17 @@ def make_slide(code):
 #%%
 if __name__ == '__main__':
         
-    names, codes, urls, images_urls = get_leihlokaldata()
+    store = LeihLokal()
+    
+    items = [item for item in store.items.values() if item.status in ['instock', 'reserved', 'verliehen'] and item.image!='']
+   
+    random.shuffle(items)
+    images_urls = [item.image for item in items]
+    codes = [item.id for item in items]
+    names = [item.name for item in items]
+    
+    
+    
 
     if not os.path.isdir('products'):
         os.makedirs('products')
