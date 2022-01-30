@@ -96,10 +96,16 @@ def make_slide(code):
     text_name.left = (prs.slide_width//2 + image.width//2)+width//66
     text_name.top = image.top-Pt(21)
     pr = text_name.text_frame.add_paragraph()
-    pr.text = f'{len(codes)} Gegenstände\naus Garten, Küche,\n' +\
-              'Kinder und \nHeimwerken\n\n' +\
-              'Kein Mitgliedsbeitrag\nKeine Leihgebühr\nGegen Pfand ausleihen\n\n'+\
-              'Unser Sortiment online:'
+    pr.text = f"""{len(codes)} Gegenstände für
+Garten, Küche, Kinder
+und zum Heimwerken.
+
+• Keine Leihgebühr
+• Gegen Pfand ausleihen
+• Spenden-finanizert
+• Ehrenamtlich organisiert
+
+Unser Sortiment online:"""
               # 'Anmelden, Ausleihen, \nFreuen!'
     pr.font.size = Pt(19)
     pr.font.name = 'TeXGyreAdventor' # install from the web if necessary
@@ -126,7 +132,7 @@ if __name__ == '__main__':
     store = LeihLokal()
     
     items = [item for item in store.items.values() if item.status in ['instock', 'reserved', 'verliehen'] and item.image!='']
-   
+    # items = items[:10]
     random.shuffle(items)
     images_urls = [item.image for item in items]
     codes = [item.id for item in items]
@@ -156,10 +162,11 @@ if __name__ == '__main__':
         try:
             # for all items: create a slide.
             make_slide(code)
-        except:
-            print("failed to create slide for item " + str(code))
-        
-    prs.save('raspberry-pi-fenster.pptx')
+        except Exception as e:
+            print("failed to create slide for item " + str(code) + e)
+    ppt_file = 'raspberry-pi-fenster.pptx'
+    print(f'Saving to {ppt_file}')
+    prs.save(ppt_file)
     
     # now open it
     os.startfile( os.path.abspath('raspberry-pi-fenster.pptx'))
