@@ -1,7 +1,8 @@
-name: Dummy commit to keep cronjob running
+name: keep cronjobs alive
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 5 * * *"
+  release:
 
 jobs:
   cronjob-based-github-action:
