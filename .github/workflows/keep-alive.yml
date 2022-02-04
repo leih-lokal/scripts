@@ -1,4 +1,4 @@
-name: Github Action with a cronjob trigger
+name: Dummy commit to keep cronjob running
 on:
   schedule:
     - cron: "0 0 * * *"
