@@ -2,7 +2,7 @@ name: keep cronjobs alive
 on:
   schedule:
     - cron: "0 5 * * *"
-  release:
+  tag:
 
 jobs:
   cronjob-based-github-action:
