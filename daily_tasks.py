@@ -307,17 +307,17 @@ if __name__ == '__main__':
         print(e)
 
     # Send reminder emails
-    answer = input('\nVersäumniserinnerungen vorbereiten? (J/N)\n')
-    if 'J' in answer.upper():
-        try:
-            send_notifications_for_overdue_rental(store)
-        except FileNotFoundError as e:
-            print('ERROR: Thunderbird mailbox file nicht gefunden?')
-            print('Muss in settings.json angegeben werden.')
-            print(e)
-        except Exception as e:
-            traceback.print_exc()
-            print(e)
+    #answer = input('\nVersäumniserinnerungen vorbereiten? (J/N)\n')
+    #if 'J' in answer.upper():
+    #    try:
+    #        send_notifications_for_overdue_rental(store)
+    #    except FileNotFoundError as e:
+    #        print('ERROR: Thunderbird mailbox file nicht gefunden?')
+    #        print('Muss in settings.json angegeben werden.')
+    #        print(e)
+    #    except Exception as e:
+    #        traceback.print_exc()
+    #        print(e)
 
     # Send customer deletion mails
     print('-'*20)
