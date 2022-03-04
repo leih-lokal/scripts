@@ -24,9 +24,9 @@ with open('settings.json', 'r', encoding='utf-8') as f:
 def get_reminder_template(customer, rental):
     rented_on = rental.rented_on.strftime('%d.%m.%Y')
     to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
-    string = f"""Liebe/r {customer.firstname} {customer.lastname}
+    string = f"""Liebe:r {customer.firstname} {customer.lastname}
 
-danke, dass Sie Ausleiher/in im leih.lokal sind. 
+danke, dass Sie Ausleiher:in im leih.lokal sind. 
 Wir freuen uns, dass immer mehr Menschen Gegenstände leihen.
    
 Bei der Ausleihe am {rented_on} hatten wir als Rückgabefrist den {to_return_on} vereinbart.
@@ -36,7 +36,7 @@ Mit jedem Öffnungstag fällt eine kleine Säumnisgebühr von 2 Euro an, die dem
 Bei Fragen oder wegen möglicher Verlängerung wenden Sie sich bitte via E-Mail an leihlokal@buergerstiftung-karlsruhe.de oder telefonisch während der Öffnungszeiten unter 0721/47004551 an einen unserer ehrenamtlichen MitarbeiterInnen.
 Viele Grüße aus dem leih.lokal.
 
-Gerwigstr. 41, 76185 Karlsruhe
+Gerwigstr. 41, 76131 Karlsruhe
 Öffnungszeiten: Mo, Do: 15-19, Sa: 11-16
 http://www.buergerstiftung-karlsruhe.de/leihlokal/
 
@@ -46,13 +46,13 @@ Diese Email wurde automatisch erstellt."""
 
 def get_deletion_template(customer):
     lastinteraction = customer.last_interaction().strftime('%d.%m.%Y')
-    string = f'Liebe/r {customer.firstname} {customer.lastname},\n\n'\
+    string = f'Liebe:r {customer.firstname} {customer.lastname},\n\n'\
              f'um die persönlichen Daten unserer Kunden zu schützen löschen wir diese ' \
              f'nachdem mehr als ein Jahr seit dem letzten Kontakt vergangen ist. ' \
              f'In Ihrem Fall ist dies am {lastinteraction} gewesen.\n' \
              f'Wir freuen uns, wenn Sie weiter Mitglied im leih.lokal sein möchten.\n'\
              f'In diesem Fall antworten Sie bitte kurz auf diese Mail.\n\n'\
-             f'Liebe Grüße und vielleicht bis bald aus dem leih.lokal\n\nGerwigstr. 41, 76185 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do: 15-19, Sa: 11-16'
+             f'Liebe Grüße und vielleicht bis bald aus dem leih.lokal\n\nGerwigstr. 41, 76131 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do: 15-19, Sa: 11-16'
     string = urllib.parse.quote(string)
     return string
 
