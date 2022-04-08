@@ -9,6 +9,7 @@ xxx
 
 @author: skjerns
 """
+import sys;sys.path.append('..')
 import datetime
 from leihlokal import LeihLokal
 import os, sys
@@ -111,7 +112,36 @@ def get_locations(customers):
     return locations
 
 
+def make_heatmap(locations, filename='./heatmap.html', overlay=''):
+    filename = os.path.abspath(filename)
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    startingLocation = [49.006239, 8.411572]
+    hmap = folium.Map(location=startingLocation, zoom_start=14)
+    
+    # Creates a heatmap element
+    hm_wide = HeatMap( locations,
+                        min_opacity=.5,
+                        radius=21, blur=25)
+    
+    # Adds the heatmap element to the map
+    hmap.add_child(hm_wide)
+    
+    # Saves the map to heatmap.hmtl
+    hmap.save(filename)
+    hti = Html2Image(custom_flags=['--virtual-time-budget=1000'])
 
+    png_file = hti.screenshot(url=filename, save_as=os.path.basename(filename) + '.png')[0]
+    
+    shutil.move(png_file, filename + '.png')
+    img = Image.open(filename + '.png')
+    draw = ImageDraw.Draw(img)
+    # font = ImageFont.truetype(<font-file>, <font-size>)
+    font = ImageFont.truetype("C:/Users/Simon/AppData/Local/Microsoft/Windows/Fonts/TTNorms-Bold.otf", 100)
+    # draw.text((x, y),"Sample Text",(r,g,b))
+    draw.text((1400, 0), overlay, (0, 0, 0), font=font, align='right')
+    img = img.resize([int(x*0.5) for x in img.size])
+    img.save(filename + '.png')
+    return img
     
     
 
@@ -151,43 +181,17 @@ if __name__ == '__main__':
     
     #%% make heatmap with animation
 
-    def make_heatmap(locations, filename='heatmap.html', overlay=''):
-        startingLocation = [49.006239, 8.411572]
-        hmap = folium.Map(location=startingLocation, zoom_start=14)
-        
-        # Creates a heatmap element
-        hm_wide = HeatMap( locations,
-                            min_opacity=.5,
-                            radius=21, blur=25)
-        
-        # Adds the heatmap element to the map
-        hmap.add_child(hm_wide)
-        
-        # Saves the map to heatmap.hmtl
-        hmap.save(filename)
-        hti = Html2Image(custom_flags=['--virtual-time-budget=5'])
-
-        png_file = hti.screenshot(url=filename, save_as=os.path.basename(filename) + '.png')[0]
-        shutil.move(png_file, filename + '.png')
-        img = Image.open(filename + '.png')
-        draw = ImageDraw.Draw(img)
-        # font = ImageFont.truetype(<font-file>, <font-size>)
-        font = ImageFont.truetype("C:/Users/Simon/AppData/Local/Microsoft/Windows/Fonts/TTNorms-Bold.otf", 100)
-        # draw.text((x, y),"Sample Text",(r,g,b))
-        draw.text((1400, 0), overlay, (0, 0, 0), font=font, align='right')
-        img = img.resize([int(x*0.5) for x in img.size])
-        img.save(filename + '.png')
-        return img
-
+    # make steps of 30 days to walk through the year(s)
     days = np.cumsum([x.days for x in np.diff([c.registration_date for c in customers])])
     steps = [np.argmax(days>i) for i in range(61, max(days), 30)]
     dates = [customers[i].registration_date.strftime('%b %Y') for i in steps]
-
-    # steps = tqdm([25, 50, 75] +  list(range(100, len(locations), 100)))
-    pngs = Parallel(n_jobs=len(steps), backend='threading')(delayed(make_heatmap)(locations[:s],
-                        os.path.abspath(f'./plots/heatmap_{i:04d}.html'), overlay=f'{dates[i]}') for i, s in enumerate(steps))
+    
+    pngs = Parallel(n_jobs=8)(delayed(make_heatmap)(locations[:s],
+                        os.path.abspath(f'./plots/heatmap/heatmap_{i:04d}.html'), 
+                        overlay=f'{dates[i]}') for i, s in enumerate(tqdm(steps, desc='creating heatmap PNGs')))
 
     duration = ([0.3]*(len(pngs)-1)) + [5]
+    print('creating GIF')
     imageio.mimsave('./plots/heatmap.gif', pngs, format='GIF-FI', duration=duration, palettesize=256, quantizer='nq')
     
     #%% Number of customers over the years
@@ -200,7 +204,7 @@ if __name__ == '__main__':
 
     plt.figure(figsize=[6,6], maximize=False)
     pngs = []
-    for i, s in enumerate(steps):
+    for i, s in enumerate(tqdm(steps)):
         plt.clf()
         dates = [c.registration_date for c in customers[:s]]
         x = pd.DataFrame({'dates':dates})
