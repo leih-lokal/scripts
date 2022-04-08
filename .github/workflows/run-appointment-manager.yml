@@ -6,7 +6,8 @@ on:
   push:
   workflow_dispatch:
   repository_dispatch:
-  
+    types:
+      - webhook
 jobs:
   run:
     runs-on: ubuntu-latest
