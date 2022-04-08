@@ -24,7 +24,7 @@ def all_items_instock(item_ids):
         return f"Could not find items in db: {item_ids_not_found_in_db}"
     if any([status["status"] != "instock" for status in item_status]):
         logging.debug(", ".join([f'{idx}: {status}' for idx, status in zip(item_ids, item_status)]))
-        return ", ".join([f'{idx}: {status}' for idx, status in zip(item_ids, item_status)])
+        return ", ".join([f'{status}' for idx, status in zip(item_ids, item_status)])
     return True
 
 
