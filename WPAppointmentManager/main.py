@@ -21,11 +21,10 @@ def all_items_instock(item_ids):
     item_ids_not_found_in_db = list(set(item_ids) - set(item_ids_found_in_db))
     if len(item_ids_not_found_in_db) > 0:
         logging.info(f"Could not find items in db: {item_ids_not_found_in_db}")
-        return False
-    for status in item_status:
-        if status["status"] != "instock":
-            logging.debug(f"item {status['id']} is {status['status']}")
-            return False
+        return f"Could not find items in db: {item_ids_not_found_in_db}"
+    if any([status["status"] != "instock" for status in item_status]):
+        logging.debug(", ".join([f'{idx}: {status}' for idx, status in zip(item_ids, item_status)]))
+        return ", ".join([f'{idx}: {status}' for idx, status in zip(item_ids, item_status)])
     return True
 
 
@@ -61,10 +60,11 @@ def should_auto_accept(appointment):
     if len(appointment["items"]) == 0:
         return False, f"Did not auto accept {appointment_to_string(appointment)} because no item ids could be found"
 
-    if all_items_instock(appointment["items"]):
+    allinstock = all_items_instock(appointment["items"])
+    if allinstock==True:
         return True, f"Auto accepted {appointment_to_string(appointment)} because all items ({appointment['items']}) are instock"
     else:
-        return False, f"Did not auto accept {appointment_to_string(appointment)} because not all items ({appointment['items']}) are instock"
+        return False, f"Did not auto accept {appointment_to_string(appointment)} because not all items ({appointment['items']}) are instock: {allinstock}"
 
 
 appointments = wp_client.get_appointments(datetime.today(), datetime.today() + timedelta(days=14))
