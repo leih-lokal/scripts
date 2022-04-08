@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "*/15 * * * *"
   push:
-  workflow_dispatch:
   repository_dispatch:
     types:
       - webhook
