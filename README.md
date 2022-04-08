@@ -108,3 +108,5 @@ Install dependencies
 Schedule cronjob (crontab -e)
 
     */30 10-20 * * 1,4-6 /home/pi/LeihLokalVerwaltung/ExcelCouchDbSync/backup_to_excel.sh >/dev/null 2>&1
+
+## Run appointment manager

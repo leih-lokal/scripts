@@ -2,7 +2,7 @@ name: Appointment Manager
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "0 8 * * *"
   push:
   repository_dispatch:
     types:

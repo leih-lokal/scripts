@@ -163,7 +163,8 @@ if __name__ == '__main__':
             # for all items: create a slide.
             make_slide(code)
         except Exception as e:
-            print("failed to create slide for item " + str(code) + e)
+            print("failed to create slide for item " + str(code) + str(e))
+            
     ppt_file = 'raspberry-pi-fenster.pptx'
     print(f'Saving to {ppt_file}')
     prs.save(ppt_file)
