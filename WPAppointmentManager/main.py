@@ -96,6 +96,7 @@ for appointment in pending_appointments:
 # run this only if it is after 20:00 in the evening. The cron job
 # is set to run somehwere after that, so that should clear the things of the day.
 if datetime.now(pytz.timezone('Europe/Berlin')).time() > time(19, 0, tzinfo=pytz.timezone('Europe/Berlin')):
+    logging.info('Clearing appointments of today')
     appointments_of_today = list(
         filter(lambda appointment: appointment["time_end"].date() == datetime.today().date(), appointments))
     appointments_after_today = list(
@@ -118,6 +119,7 @@ if datetime.now(pytz.timezone('Europe/Berlin')).time() > time(19, 0, tzinfo=pytz
     items_still_reserved = list(map(lambda item: item["id"], items_still_reserved))
     reset_item_status_count = 0
     for item_doc in couchdb_client.get_items(items_still_reserved):
+        logging.info(f'Reset status of {item_doc}')
         item_doc = couchdb_client.as_document(item_doc)
         update_item_status(item_doc, "instock", "instock")
         reset_item_status_count += 1
