@@ -95,7 +95,7 @@ for appointment in pending_appointments:
 # reset status to instock for items that have been reserverd but not rented
 # run this only if it is after 20:00 in the evening. The cron job
 # is set to run somehwere after that, so that should clear the things of the day.
-if datetime.now(pytz.timezone('Europe/Berlin')).time() > time(20, 0, tzinfo=pytz.timezone('Europe/Berlin')):
+if datetime.now(pytz.timezone('Europe/Berlin')).time() > time(19, 0, tzinfo=pytz.timezone('Europe/Berlin')):
     appointments_of_today = list(
         filter(lambda appointment: appointment["time_end"].date() == datetime.today().date(), appointments))
     appointments_after_today = list(
