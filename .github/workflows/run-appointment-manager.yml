@@ -1,6 +1,8 @@
 name: Appointment Manager
 
-concurrency: appointmentmanager
+concurrency: 
+   group: appointmentmanager
+   cancel-in-progress: false
 
 on:
   schedule:
