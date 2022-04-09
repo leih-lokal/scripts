@@ -51,8 +51,9 @@ def appointment_to_string(appointment):
 
 
 def should_auto_accept(appointment):
-    if appointment["other_appointment"]:
-        return False, f"Did not auto accept {appointment_to_string(appointment)} because customer has other appointment"
+    # other appointment does not exist anymore
+    # if appointment["other_appointment"]:
+    #     return False, f"Did not auto accept {appointment_to_string(appointment)} because customer has other appointment"
 
     if appointment["return"]:
         return True, f"Auto accepted {appointment_to_string(appointment)} because customer returns items"
