@@ -24,8 +24,8 @@ def _clean_data(appointment):
                                         '%d.%m.%Y %H:%M'),
         "time_end": datetime.strptime(f"{appointment['app_date_1']} {appointment['app_endtime_1']}", '%d.%m.%Y %H:%M'),
         "return": appointment['Ich mchte einen Gegenstand/Gegenstnde..'] == "zurückgeben",
-        "other_appointment": appointment[
-                                 'Haben Sie schon einen weiteren/anderen Termin fr diesen Tag gebucht?'] == "Ja",
+        # "other_appointment": appointment[
+        #                          'Haben Sie schon einen weiteren/anderen Termin fr diesen Tag gebucht?'] == "Ja",
         "status": appointment["cancelled"], # Attended / Genehmigt / Zusammengelegt / Cancelled by customer / Rejected / Cancelled / Bitte ansehen
         "customer_name": appointment['Ihr Vor- und Zuname'],
         "customer_id": appointment.get('Ihre Nutzernummer (falls zur Hand)'),
