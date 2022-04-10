@@ -90,7 +90,7 @@ for appointment in pending_appointments:
         subject = f"[!] Ansehen: {appointment['customer_name']} @ {appointment['time_start']}"
         message = "Der folgende Termin konnte nicht automatisch angenommen werden. Bitte manuell im WordPress ansehen.\n"
         message += f"Grund: {reason}\n\n\n{pprint.pformat(appointment)}"
-        mail_client.send(subject, message)
+        mail_client.send(subject, message, reply_to=appointment['customer_mail'])
     logging.info(reason)
 
 # reset status to instock for items that have been reserverd but not rented

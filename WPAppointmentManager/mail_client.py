@@ -31,12 +31,14 @@ class MailClient:
         self.server = server
         self.mail_to = user
 
-    def send(self, subject, message):
+    def send(self, subject, message, reply_to=None):
         msg = MIMEMultipart()
         msg['From'] = base64.b64decode(b'bm9yZXBseUBidWVyZ2Vyc3RpZnR1bmcta2FybHNydWhlLmRl').decode()
         msg['To'] = self.mail_to
         msg['Subject'] = subject
         msg["Date"] = formatdate(localtime=True)
+        if reply_to: 
+            msg['Reply-To'] = f'<{reply_to.strip("<>")}>'
 
         # add in the message body
         msg.attach(MIMEText(message, 'plain'))
