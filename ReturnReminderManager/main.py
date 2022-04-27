@@ -92,6 +92,7 @@ if __name__ == '__main__':
     for customer, rentals in reminders.items():
         if customer is None:
             errors.append(f'{customer} is Null for {rentals}')
+            continue
         if not valid_email(customer.email):
             errors.append(f'{customer.email} of {customer} is not a valid email adress')
             continue
