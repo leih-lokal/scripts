@@ -90,6 +90,8 @@ if __name__ == '__main__':
     # collect all errors, we will send them separately later in the script
     errors = []
     for customer, rentals in reminders.items():
+        if customer is None:
+            errors.append(f'{customer} is Null for {rentals}')
         if not valid_email(customer.email):
             errors.append(f'{customer.email} of {customer} is not a valid email adress')
             continue
