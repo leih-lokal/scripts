@@ -273,6 +273,7 @@ if __name__=='__main__':
         book = writer.book
         df_selected.to_excel(writer, sheet_name=date_str)
         sheet = writer.sheets[date_str]
+        sheet.set_paper(9)
         sheet.set_landscape()
         sheet.center_vertically()
         sheet.center_horizontally()
