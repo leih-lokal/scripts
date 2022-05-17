@@ -36,7 +36,7 @@ from PIL import ImageDraw
 import imageio
 
 sns.set(style='whitegrid')
-
+asd
 #%%
 
 def get_locations(customers):
@@ -65,9 +65,13 @@ def get_locations(customers):
                 found = json.load(f)
             
             if address in found:
-                return None if found[address]=='' else  found[address]
+                return None if found[address]=='' else found[address]
 
             location = self.geolocator.geocode(address)
+            if location is None:
+                address2 = address.replace('ae', 'ä').replace('ue', 'ü').replace('oe', 'ö')
+                location = self.geolocator.geocode(address2)
+                
             time.sleep(0.1)
             if location is None:
                 found[address] = ''
@@ -216,7 +220,7 @@ if __name__ == '__main__':
         # plt.xlim(xlim)
         plt.xlabel('Monat', {'fontsize':16})
         plt.ylabel('Anzahl Ausleiher:innen', {'fontsize':16})
-        plt.legend(['Kunden', 'Linearer Anstieg'])
+        plt.legend(['Nutzer:in', 'Linearer Anstieg'])
         plt.title('Zuwachs an Ausleiher:innen seit Eröffnung', {'fontsize':20})
         plt.xticks(rotation=25)
         plt.tight_layout()
@@ -276,11 +280,16 @@ if __name__ == '__main__':
 
     #%%
     fig, ax = plt.subplots(1,1)
-    df.groupby(df["date"].dt.dayofweek).count().plot(kind="bar", ax=ax, legend=False)
+    # limit to after 2021
+    df = df[df['date']>datetime.datetime(2021,1,1)]
+    total_weeks = len(df.groupby([df["date"].dt.week, df["date"].dt.year]).count())
+    df_perday = df.groupby(df["date"].dt.dayofweek).count().drop(index=[1, 2, 6])/total_weeks
+    df_perday.index = ['Montag', 'Donnerstag', 'Freitag', 'Samstag']    
+    df_perday.plot(kind="bar", ax=ax, legend=False)
     ax.set_xticklabels(['Montag', 'Donnerstag', 'Freitag', 'Samstag'])
-    ax.set_title('Ausleihen pro Tag', {'fontsize':20})
+    ax.set_title('Ausleihen pro Tag im Durchschnitt (2021)', {'fontsize':20})
     ax.set_xlabel('Tag', {'fontsize':16})
-    ax.set_ylabel('Anzahl Ausleihen in diesem Tag', {'fontsize':16})
+    ax.set_ylabel('Ausleihen in diesem Tag', {'fontsize':16})
     plt.xticks(rotation=25)
     plt.tight_layout()
 
@@ -290,8 +299,8 @@ if __name__ == '__main__':
     plt.figure(figsize=[7, 5], maximize=False)
     sns.distplot(counts, norm_hist=False, kde=False, bins=np.arange(1, 12)-0.49, hist_kws={'alpha':0.8})
     plt.xlabel('Anzahl Ausleihen', {'fontsize':16})
-    plt.ylabel('Anzahl der Kunden', {'fontsize':16})
-    plt.title('Anzahl der Ausleihen pro Kunde im Durchschnitt', {'fontsize':16})
+    plt.ylabel('Anzahl der Nutzer:in', {'fontsize':16})
+    plt.title('Anzahl der Ausleihen pro Nutzer:in im Durchschnitt', {'fontsize':16})
     plt.xticks(np.arange(1, 11), [str(x) for x in range(1, 10)] + ['>=10'])
     plt.tight_layout()
     plt.savefig('./plots/per_kunde.png')

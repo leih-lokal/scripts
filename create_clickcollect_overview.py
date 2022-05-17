@@ -248,7 +248,13 @@ if __name__=='__main__':
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('zurückgeben', 'z'))
 
     opening_hours = range(10, 14) if date.weekday()==5 else range(15, 19)
-    missing_slots = [f'{h}:{m}0' for h in opening_hours for m in range(6) if not f'{h}:{m}0' in df_selected['Zeit'].values][:-1]
+    missing_slots = []
+    max_slots = 3
+    for h in opening_hours:
+        for m in [0, 3]:
+            slot = f'{h}:{m}0'
+            for _ in range(max_slots-sum(df_selected['Zeit']==slot)):
+                missing_slots.append(slot)
 
     df_selected = df_selected.append([{'Zeit': s} for s in missing_slots], ignore_index=True)
     df_selected.fillna('', inplace=True)
