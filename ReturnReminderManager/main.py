@@ -28,34 +28,37 @@ def get_reminder_template(customer, rentals):
     s = f"""\
 Liebe/r {customer.firstname} {customer.lastname},
 
-wir hoffen, Sie hatten viel Freude an {'den' if several else 'dem'} bei uns geliehenen \
-{'Gegenständen' if several else 'Gegenstand'}!
-
 Morgen wird die Rückgabe {'der' if several else 'des'} \
 {'Gegenstände' if several else 'Gegenstands'}: "{items_str}" fällig. \
 Wir bitten Sie, {'die Gegenstände' if several else 'den Gegenstand'} morgen zu \
 den Öffnungszeiten zurück zu bringen.
 
-Falls die maximale Leihdauer von drei Wochen noch nicht erreicht ist, \
-können Sie ggf. die Ausleihe noch einmal per Telefon oder Mail verlängern. \
-Sollten Sie den Gegenstand jedoch nicht mehr benötigen, freuen sich die nachfolgenden \
-AusleiherInnen über eine zeitige Rückgabe.
+Sollte die maximale Leihdauer von drei Wochen noch nicht erreicht sein, \
+ist es ggf. möglich, die Ausleihe auf Nachfrage zu verlängern. Bitte fragen Sie
+hierzu während der Öffnungszeiten telefonisch oder jederzeit per Mail nach. \
+Bitte haben Sie Verständnis, dass, je nach Nachfrage des Gegenstandes, eine \
+Verlängerung nicht immer möglich ist.
 
-Sollte es sich morgen um keinen Öffnungstag handeln, geben Sie {'die Gegenstände' if several else 'den Gegenstand'}\
-einfach am darauffolgenden Öffnungstag ab. Weitere Informationen finden Sie unter https://bitly.com/leihlokal
+Sollte es sich morgen um keinen Öffnungstag handeln, geben Sie \
+{'die Gegenstände' if several else 'den Gegenstand'}\
+einfach am darauffolgenden Öffnungstag ab. Weitere Informationen \
+finden Sie unter https://www.leihlokal-ka.de
 
 Liebe Grüße, 
 das leih.lokal-Team
 
 Gerwigstr. 41, 76185 Karlsruhe
-Öffnungszeiten: Mo, Do: 15-19, Sa: 11-16
+Öffnungszeiten: Mo, Do: 15-19, Sa: 10-14
 Telefon: 0721/ 4700 4551
-http://www.buergerstiftung-karlsruhe.de/leihlokal/
+https://www.leihlokal-ka.de
 
 //
 Das leih.lokal ist eine ehrenamtliches Projekt von der Bürgerstiftung Karlsruhe.
 Wir arbeiten komplett spendenfinanziert und freuen uns daher über Ihre Spende.
 Mach doch auch mit und hilf uns die Welt ein bisschen nachhaltiger zu gestalten!
+
+Lust mitzumachen? Wir sind immer auf Menschen die Lust haben in unserem bunten \
+Team mitzuwirken.
 // 
 Diese Email wurde automatisch generiert. Sie kann daher Fehler enthalten. \
 Wir bitten dies zu entschuldigen.
