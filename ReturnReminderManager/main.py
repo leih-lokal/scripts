@@ -39,15 +39,15 @@ hierzu während der Öffnungszeiten telefonisch oder jederzeit per Mail nach. \
 Bitte haben Sie Verständnis, dass, je nach Nachfrage des Gegenstandes, eine \
 Verlängerung nicht immer möglich ist.
 
-Sollte es sich morgen um keinen Öffnungstag handeln, geben Sie \
-{'die Gegenstände' if several else 'den Gegenstand'}\
-einfach am darauffolgenden Öffnungstag ab. Weitere Informationen \
+Sollten wir morgen nicht geöffnet haben, geben Sie \
+{'die Gegenstände' if several else 'den Gegenstand'} einfach am \
+nächsten Öffnungstag ab. Weitere Informationen \
 finden Sie unter https://www.leihlokal-ka.de
 
 Liebe Grüße, 
 das leih.lokal-Team
 
-Gerwigstr. 41, 76185 Karlsruhe
+Gerwigstr. 41, 76131 Karlsruhe
 Öffnungszeiten: Mo, Do: 15-19, Sa: 10-14
 Telefon: 0721/ 4700 4551
 https://www.leihlokal-ka.de
