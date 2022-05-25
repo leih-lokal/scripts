@@ -27,9 +27,9 @@ def _clean_data(appointment):
         # "other_appointment": appointment[
         #                          'Haben Sie schon einen weiteren/anderen Termin fr diesen Tag gebucht?'] == "Ja",
         "status": appointment["cancelled"], # Attended / Genehmigt / Zusammengelegt / Cancelled by customer / Rejected / Cancelled / Bitte ansehen
-        "customer_name": appointment['Ihr Vor- und Zuname'],
-        "customer_id": appointment.get('Ihre Nutzernummer (falls zur Hand)'),
-        "customer_mail": appointment['Ihre Email'],
+        "customer_name": appointment['Dein Vor- und Zuname'],
+        "customer_id": appointment.get('Deine Nutzernummer (falls zur Hand)'),
+        "customer_mail": appointment['Deine Email'],
         "appointment_id": appointment['itemnumber']
     }
 
