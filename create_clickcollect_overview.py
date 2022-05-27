@@ -165,12 +165,12 @@ if __name__=='__main__':
     f = io.StringIO(csv_file)
     df = pd.read_csv(f, sep=';')
 
-    df.fillna('',inplace=True)
+    df.fillna('', inplace=True)
     df = df.convert_dtypes('str')
     keep_columns = ['app_starttime_1', 'Ich möchte einen Gegenstand/Gegenstände..',
-                    'Ihr Vor- und Zuname', 'Ich bin', 'Artikelnummer(n)','app_status_1',
-                    'Haben Sie noch Kommentare oder Anmerkungen zu Ihrem Termin?',
-                    'Ihre Nutzernummer (falls zur Hand)', 'app_date_1',
+                    'Dein Vor- und Zuname', 'Ich bin', 'Artikelnummer(n)','app_status_1',
+                    'Hast Du noch Kommentare oder Anmerkungen zu Deinem Termin?',
+                    'Deine Nutzernummer (falls zur Hand)', 'app_date_1',
                     ]
 
     date = show_date_picker('Bitte Tag wählen')
@@ -190,7 +190,7 @@ if __name__=='__main__':
     df_selected = df_selected.convert_dtypes('str')
 
     ids_infered = []
-    for name, neu, customer_id in zip(df_selected['Ihr Vor- und Zuname'], df_selected['Ich bin'], df_selected['Ihre Nutzernummer (falls zur Hand)']):
+    for name, neu, customer_id in zip(df_selected['Dein Vor- und Zuname'], df_selected['Ich bin'], df_selected['Deine Nutzernummer (falls zur Hand)']):
         try:
             customer_id = int(customer_id)
         except:
@@ -200,7 +200,7 @@ if __name__=='__main__':
         elif customer_id=='':
             customer_id = get_customer_id_by_name(name)
         ids_infered.append(customer_id)
-    df_selected['Ihre Nutzernummer (falls zur Hand)'] = ids_infered
+    df_selected['Deine Nutzernummer (falls zur Hand)'] = ids_infered
 
     deposit_infered = []
     for ids_string, mode in zip(df_selected['Artikelnummer(n)'], df_selected['Ich möchte einen Gegenstand/Gegenstände..']):
@@ -228,15 +228,15 @@ if __name__=='__main__':
 
 
     df_selected.drop('app_date_1', axis=1, inplace=True)
-    df_selected['Ihr Vor- und Zuname'] = df_selected['Ihr Vor- und Zuname'] + ' ('+ df_selected['Ihre Nutzernummer (falls zur Hand)'].astype(str) + ')'
-    df_selected.drop('Ihre Nutzernummer (falls zur Hand)', axis=1, inplace=True)
+    df_selected['Dein Vor- und Zuname'] = df_selected['Dein Vor- und Zuname'] + ' ('+ df_selected['Deine Nutzernummer (falls zur Hand)'].astype(str) + ')'
+    df_selected.drop('Deine Nutzernummer (falls zur Hand)', axis=1, inplace=True)
     df_selected.drop('Ich bin', axis=1, inplace=True)
 
     # rename columns
-    df_selected.rename({'Ihr Vor- und Zuname':'NutzerIn',
+    df_selected.rename({'Dein Vor- und Zuname':'NutzerIn',
                         'Ich möchte einen Gegenstand/Gegenstände..':'a/z',
                         'app_starttime_1':'Zeit',
-                        'Haben Sie noch Kommentare oder Anmerkungen zu Ihrem Termin?':'Kommentar',
+                        'Hast Du noch Kommentare oder Anmerkungen zu Deinem Termin?':'Kommentar',
                         'app_status_1': 'Status'},
                         inplace=True, axis=1)
 
