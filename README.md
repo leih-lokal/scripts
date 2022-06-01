@@ -109,4 +109,35 @@ Schedule cronjob (crontab -e)
 
     */30 10-20 * * 1,4-6 /home/pi/LeihLokalVerwaltung/ExcelCouchDbSync/backup_to_excel.sh >/dev/null 2>&1
 
-## Run appointment manager
+## WordPress files for displaying custom changes
+
+There are a couple of changes made to some of the WordPress files that enable customization of how products get displayed individually, in the search and also in the overview of the catalog. There are many more changes made, but before the time we joined the leihlokal, and sometimes it can be a bit of a pain to track down in which file which change needs to be made
+
+
+
+**Change color of  "ausgeliehen", "verfügbar"**
+
+This is set in `wp-content/themes/JointsWP/assets/styles/styles.css`
+
+```php
+/* WOOCOMMERCE */
+
+.stock.out-of-stock{
+	font-size: medium;
+	color: red;
+}
+.stock.in-stock{
+	font-size: medium;
+	color: green;
+}
+```
+
+**Display Meta fields**
+
+there are different functions in the `wp-content/themes/JointsWP/function.php` that inject them via action-hooks
+
+
+
+**Products in search results**
+
+Each item gets displayed via `wp-content/themes/JointsWP/parts/loop-archive-grid.php`, there are quite a few changes there that were adapted
