@@ -113,8 +113,6 @@ Schedule cronjob (crontab -e)
 
 There are a couple of changes made to some of the WordPress files that enable customization of how products get displayed individually, in the search and also in the overview of the catalog. There are many more changes made, but before the time we joined the leihlokal, and sometimes it can be a bit of a pain to track down in which file which change needs to be made
 
-
-
 **Change color of  "ausgeliehen", "verfügbar"**
 
 This is set in `wp-content/themes/JointsWP/assets/styles/styles.css`
@@ -123,12 +121,12 @@ This is set in `wp-content/themes/JointsWP/assets/styles/styles.css`
 /* WOOCOMMERCE */
 
 .stock.out-of-stock{
-	font-size: medium;
-	color: red;
+    font-size: medium;
+    color: red;
 }
 .stock.in-stock{
-	font-size: medium;
-	color: green;
+    font-size: medium;
+    color: green;
 }
 ```
 
@@ -136,8 +134,12 @@ This is set in `wp-content/themes/JointsWP/assets/styles/styles.css`
 
 there are different functions in the `wp-content/themes/JointsWP/function.php` that inject them via action-hooks
 
-
-
 **Products in search results**
 
 Each item gets displayed via `wp-content/themes/JointsWP/parts/loop-archive-grid.php`, there are quite a few changes there that were adapted
+
+
+
+**Custom status names**
+
+You can customize the status displays for "available" and "onbackorder" in the `functions.php` in the hook `wcs_custom_get_availability`
