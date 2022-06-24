@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from leihlokal import LeihLokal
 from mail_client import MailClient
 from collections import defaultdict
+from email.utils import formataddr
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -102,7 +103,8 @@ if __name__ == '__main__':
             names = ', '.join([str(rental.item.name) for rental in rentals])
             email_msg = get_reminder_template(customer, rentals)
             subject = f"[leih.lokal] Rückgabe morgen fällig ({names})"
-            mail_client.send(customer.email, subject, email_msg)
+            mail_to = formataddr((f"{customer.firstname} {customer.lastname}", customer.email))
+            mail_client.send(mail_to, subject, email_msg)
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
 

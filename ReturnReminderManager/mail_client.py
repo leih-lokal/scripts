@@ -11,6 +11,7 @@ import smtplib
 from email.utils import formatdate
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,12 +29,13 @@ class MailClient:
         server = smtplib.SMTP(server, timeout=15)
         server.starttls()
         server.login(user, password)
+        leihlokal_mail = base64.b64decode(b'bGVpaGxva2FsQGJ1ZXJnZXJzdGlmdHVuZy1rYXJsc3J1aGUuZGU=').decode()
         self.server = server
-        self.leihlokal_mail = base64.b64decode(b'bGVpaGxva2FsQGJ1ZXJnZXJzdGlmdHVuZy1rYXJsc3J1aGUuZGU=').decode()
+        self.mail_from = formataddr(('leih.lokal Karlsruhe', leihlokal_mail))
 
     def send(self, mail_to, subject, message):
         msg = MIMEMultipart()
-        msg['From'] = self.leihlokal_mail
+        msg['From'] = self.mail_from
         msg['To'] = mail_to
         msg['Subject'] = subject
         msg["Date"] = formatdate(localtime=True)
