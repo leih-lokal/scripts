@@ -92,6 +92,7 @@ if __name__ == '__main__':
     # now for each reminder, create and send the corresponding email
     # collect all errors, we will send them separately later in the script
     errors = []
+    mail_to=''
     for customer, rentals in reminders.items():
         if customer is None:
             errors.append(f'{customer} is Null for {rentals}')
@@ -108,8 +109,10 @@ if __name__ == '__main__':
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
 
-         # wait 30 seconds before next mail to not trigger any spam protection
-        time.sleep(30)
+         # wait 8 seconds before next mail to not trigger any spam protection
+        time.sleep(8)
+        if 'yahoo' in mail_to:
+            time.sleep(30) # another 30 seconds in case of yahoo, they're picky
 
     # if there were error messages, we'll send them via mail
     if len(errors)>0:
