@@ -42,7 +42,7 @@ Verlängerung nicht immer möglich ist.
 Sollten wir morgen nicht geöffnet haben, geben Sie \
 {'die Gegenstände' if several else 'den Gegenstand'} einfach am \
 nächsten Öffnungstag ab. Weitere Informationen \
-finden Sie unter https://www.leihlokal-ka.de
+finden Sie auf unserer Webseite.
 
 Liebe Grüße, 
 das leih.lokal-Team
@@ -50,7 +50,6 @@ das leih.lokal-Team
 Gerwigstr. 41, 76131 Karlsruhe
 Öffnungszeiten: Mo, Do: 15-19, Sa: 10-14
 Telefon: 0721/ 4700 4551
-https://www.leihlokal-ka.de
 
 //
 Das leih.lokal ist eine ehrenamtliches Projekt von der Bürgerstiftung Karlsruhe.
@@ -107,8 +106,8 @@ if __name__ == '__main__':
         except Exception as e:
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
 
-         # wait 5 seconds before next mail to not trigger any spam protection
-        time.sleep(5)
+         # wait 30 seconds before next mail to not trigger any spam protection
+        time.sleep(30)
 
     # if there were error messages, we'll send them via mail
     if len(errors)>0:
