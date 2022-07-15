@@ -107,7 +107,7 @@ if __name__ == '__main__':
             mail_to = formataddr((f"{customer.firstname} {customer.lastname}", customer.email))
             mail_client.send(mail_to, subject, email_msg)
         except Exception as e:
-            logging.info(f"Cannot send mail to {customer} for items {rentals}: {e}")
+            logging.error(f"Cannot send mail to {customer} for items {rentals}: {e}")
             errors.append(f"Cannot send mail to {customer} for items {rentals}: {e}")
 
          # wait 8 seconds before next mail to not trigger any spam protection
