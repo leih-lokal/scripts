@@ -119,4 +119,4 @@ if __name__ == '__main__':
         errors_str = '\n\n'.join(errors)
         subject =  "[leih.lokal] Fehler beim Ausführen der Rückgabe-Erinnerungen"
         error_msg = f"Die folgenden Fehler traten beim ausführen der Erinnerungen auf: \n\n\n{errors_str}"
-        mail_client.send(mail_client.leihlokal_mail, subject, error_msg)
+        mail_client.send(mail_client.mail_from, subject, error_msg)
