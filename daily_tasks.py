@@ -277,6 +277,8 @@ def check_website_status(store):
             print(f'Fehler beim filtern von {item}: {e}')
 
     print('\n------- Online reserviert, schau bitte ob Reservierung noch aktuell-------')
+    curr_reserved_items = sorted(curr_reserved_items, key=lambda x:x.last_update,
+                                 reverse = True)
     for item in curr_reserved_items:
         print(f'Am {item.last_update} reserviert: {item}')
 
