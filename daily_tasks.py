@@ -159,11 +159,19 @@ def send_notification_for_customers_on_deletion(store):
         print('#'*25)
         print('Suche nach Mitgliedern die geloescht werden müssen')
 
+        today = datetime.datetime.now().date()
+        delta2y = datetime.timedelta(days=365*2)
 
-        func = lambda c: ((datetime.datetime.now().date() - c.last_interaction()).days\
-                          >= 365) if c.registration_date < datetime.date(2020,5,20) else \
-                         ((datetime.datetime.now().date() - c.last_interaction()).days >= 365*2)
+        # get all rentals of the last 2 years
+        rentals_2years = store.filter_rentals(lambda r: r.rented_on > today-delta2y)
+        # get all customers that rented something in the last two years
+        customers_ids_2years = set([r.customer_id for r in rentals_2years])
+        
+        # lambda to get all that had 'last_interaction' before two years ago
+        func = lambda c: (today - c.last_interaction()).days >= 365*2
         customers_old = store.filter_customers(func)
+        # sanity check, really no rentals on their id?
+        customers_old = [c for c in customers_old if not c.id in customers_ids_2years]
 
         already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=9999)
         already_sent = [c for c in already_sent if c in customers_old]

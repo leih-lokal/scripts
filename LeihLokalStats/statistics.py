@@ -36,7 +36,7 @@ from PIL import ImageDraw
 import imageio
 
 sns.set(style='whitegrid')
-asd
+
 #%%
 
 def get_locations(customers):
