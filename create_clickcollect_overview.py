@@ -247,12 +247,11 @@ if __name__=='__main__':
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('abholen', 'ab'))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('zurückgeben', 'z'))
 
-    opening_hours = range(10, 14) if date.weekday()==5 else range(15, 19)
+    opening_hours = range(10, 14-1) if date.weekday()==5 else range(15, 19-1)
     missing_slots = []
-    max_slots = 3
+    max_slots = 6
     for h in opening_hours:
-        for m in [0, 3]:
-            slot = f'{h}:{m}0'
+            slot = f'{h}:30'
             for _ in range(max_slots-sum(df_selected['Zeit']==slot)):
                 missing_slots.append(slot)
 
