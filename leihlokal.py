@@ -114,7 +114,6 @@ class LeihLokal(object):
         db = couchdb['leihlokal']
         all_docs = db.all_docs(include_docs=True)['rows']
 
-
         # iterate over all customers and add them
         print('retrieving customers')
         for row in list(filter(lambda result: "type" in result["doc"] and result["doc"]["type"] == "customer", all_docs)):

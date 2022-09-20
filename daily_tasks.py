@@ -47,11 +47,11 @@ Diese Email wurde automatisch erstellt."""
 def get_deletion_template(customer):
     lastinteraction = customer.last_interaction().strftime('%d.%m.%Y')
     string = f'Liebe:r {customer.firstname} {customer.lastname},\n\n'\
-             f'um die persönlichen Daten unserer Kunden zu schützen löschen wir diese ' \
-             f'nachdem mehr als ein Jahr seit dem letzten Kontakt vergangen ist. ' \
-             f'In Ihrem Fall ist dies am {lastinteraction} gewesen.\n' \
-             f'Wir freuen uns, wenn Sie weiter Mitglied im leih.lokal sein möchten.\n'\
-             f'In diesem Fall antworten Sie bitte kurz auf diese Mail.\n\n'\
+             f'um die persönlichen Daten unserer Kund:innen zu schützen löschen wir diese ' \
+             f'nachdem mehr als zwei Jahre seit dem letzten Kontakt vergangen ist. ' \
+             f'In deinem Fall ist dies am {lastinteraction} gewesen.\n' \
+             f'Wir freuen uns, wenn du weiter Mitglied im leih.lokal sein möchtest.\n'\
+             f'In diesem Fall antworte bitte kurz auf diese Mail.\n\n'\
              f'Liebe Grüße und vielleicht bis bald aus dem leih.lokal\n\nGerwigstr. 41, 76131 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do: 15-19, Sa: 11-16'
     string = urllib.parse.quote(string)
     return string
