@@ -49,7 +49,7 @@ Liebe Grüße,
 das leih.lokal-Team
 
 Gerwigstr. 41, 76131 Karlsruhe
-Öffnungszeiten: Mo, Do: 15-19, Sa: 10-14
+Öffnungszeiten: Mo, Do, Fr: 15-19, Sa: 10-14
 Telefon: 0721/ 4700 4551
 
 //
