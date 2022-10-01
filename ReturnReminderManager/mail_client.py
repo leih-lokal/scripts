@@ -42,6 +42,11 @@ class MailClient:
 
         # add in the message body
         msg.attach(MIMEText(message, 'plain'))
+        
+        # add fake unsubscribe link
+        if 'yahoo' in mail_to.lower():
+            msg.add_header('List-Unsubscribe',
+                           '<https://buergerstiftung-karlsruhe.de/leihlokal/>')
 
         # send the message via the server.
         logging.info(f"sending mail to {mail_to}: {msg['Subject']}")
