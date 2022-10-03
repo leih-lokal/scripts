@@ -39,6 +39,7 @@ class MailClient:
         msg['To'] = mail_to
         msg['Subject'] = subject
         msg["Date"] = formatdate(localtime=True)
+        print('current date', formatdate(localtime=True))
 
         # add in the message body
         msg.attach(MIMEText(message, 'plain'))
