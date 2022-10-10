@@ -5,9 +5,11 @@ Created on Wed Apr 21 20:23:41 2021
 @author: Simon
 """
 import os
+import time
 import base64
 import logging
 import smtplib
+import imaplib
 from email.utils import formatdate
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,11 +28,17 @@ class MailClient:
         password = os.environ.get("MAIL_PASSWORD")
         server = os.environ.get("MAIL_SERVER")
         logging.debug(f'logging in to SMTP: {server} with mail {user}')
-        server = smtplib.SMTP(server, timeout=15)
-        server.starttls()
-        server.login(user, password)
+        
+        smpt = smtplib.SMTP(server, timeout=15)
+        smpt.starttls()
+        smpt.login(user, password)
+
+        imap = imaplib.IMAP4_SSL(server, timeout=15)
+        imap.login(user, password)
+        
         leihlokal_mail = base64.b64decode(b'bGVpaGxva2FsQGJ1ZXJnZXJzdGlmdHVuZy1rYXJsc3J1aGUuZGU=').decode()
-        self.server = server
+        self.imap = imap
+        self.smpt = smpt
         self.mail_from = formataddr(('leih.lokal Karlsruhe', leihlokal_mail))
 
     def send(self, mail_to, subject, message):
@@ -51,4 +59,8 @@ class MailClient:
 
         # send the message via the server.
         logging.info(f"sending mail to {mail_to}: {msg['Subject']}")
-        self.server.sendmail(msg['From'], mail_to, msg.as_string())
+        self.smtp.sendmail(msg['From'], mail_to, msg.as_string())
+
+        self.imap.append('INBOX.Archives', '\\Seen', 
+                         imaplib.Time2Internaldate(time.time()), 
+                         msg.as_string().encode('utf8'))
