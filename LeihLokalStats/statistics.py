@@ -186,18 +186,19 @@ if __name__ == '__main__':
     #%% make heatmap with animation
 
     # make steps of 30 days to walk through the year(s)
-    days = np.cumsum([x.days for x in np.diff([c.registration_date for c in customers])])
-    steps = [np.argmax(days>i) for i in range(61, max(days), 30)]
+    steps = np.where(np.diff([c.registration_date.month for c in customers]))[0]
+    # steps = [np.argmax(days>i) for i in range(61, max(days), 30)]
     dates = [customers[i].registration_date.strftime('%b %Y') for i in steps]
     
-    pngs = Parallel(n_jobs=8)(delayed(make_heatmap)(locations[:s],
+    pngs = Parallel(n_jobs=-1)(delayed(make_heatmap)(locations[:s],
                         os.path.abspath(f'./plots/heatmap/heatmap_{i:04d}.html'), 
                         overlay=f'{dates[i]}') for i, s in enumerate(tqdm(steps, desc='creating heatmap PNGs')))
 
     duration = ([0.3]*(len(pngs)-1)) + [5]
     print('creating GIF')
-    imageio.mimsave('./plots/heatmap.gif', pngs, format='GIF-FI', duration=duration, palettesize=256, quantizer='nq')
-    
+    imageio.mimsave('./plots/heatmap.gif', pngs[1:], format='GIF-FI', duration=duration, palettesize=256, quantizer='nq')
+    imageio.mimsave('./plots/heatmap.mp4', pngs, format='mp4', fps=5, quality=9)
+
     #%% Number of customers over the years
     first = list(customers)[0].registration_date
     last = list(customers)[-1].registration_date

@@ -68,11 +68,12 @@ def get_leihlokaldata():
         name = p.find_all('h2')[0].text
         page_url = p.a.attrs['href']
         status = p.p.text
+        img = p.find('img').attrs['src']
         products[code] = {'code': code,
                           'name': name,
                           'page_url': page_url,
                           'status': status,
-                          }
+                          'img':img}
     return products
 
 

@@ -259,6 +259,9 @@ def check_website_status(store):
     curr_rental_items = list(set([rental.item for rental in store.filter_rentals(lambda x:not x.returned_on)]))
     curr_reserved_items = store.filter_items(lambda x: x.status=='reserved')
     curr_inrepair_items = store.filter_items(lambda x: x.status=='onbackorder')
+    
+    items_no_img_db = store.filter_items(lambda x: (x.image=='') & (x.status!='deleted'))
+    items_no_img_wc = {id:item for id, item in wc_products.items() if 'woocommerce-placeholder' in item['img']}
 
     print('\n------- Online verliehen, aber keine Ausleihe ---------')
     for code in sorted(unavailable_wc):
@@ -285,17 +288,23 @@ def check_website_status(store):
             print(f'Fehler beim filtern von {item}: {e}')
 
     print('\n------- Online reserviert, schau bitte ob Reservierung noch aktuell-------')
-    curr_reserved_items = sorted(curr_reserved_items, key=lambda x:x.last_update,
-                                 reverse = True)
+    curr_reserved_items = sorted(curr_reserved_items, key=lambda x:x.last_update)
     for item in curr_reserved_items:
         print(f'Am {item.last_update} reserviert: {item}')
+    
+    print('\n------- Gegenstände mit fehlendem Bild -------')
+    for item in items_no_img_wc:
+        print(f'{store.items[item]} hat kein Bild auf Webseite und Leihsoftware')
+    for item in items_no_img_db:
+        if item in items_no_img_wc: continue
+        print(f'{item} hat keinen Bildlink in der Leihsoftware')
 
     print('\n------- [INFO] Als "in Reparatur" markiert -------')
+    curr_inrepair_items = sorted(curr_inrepair_items, key=lambda x:x.last_update)
     for item in curr_inrepair_items:
         if item.id in available_wc:
-            print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar')
-        print(f'{item} online nicht verfügbar seit {item.last_update if hasattr(item, "last_update") else ""}')
-
+            print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar markiert, aber in Reparatur')
+        print(f'Seit {item.last_update if hasattr(item, "last_update") else ""} {item} in Reparatur')
 
     print('\n' + '-'*55)
 
@@ -331,7 +340,7 @@ if __name__ == '__main__':
 
     # Send customer deletion mails
     print('-'*20)
-    answer = input('\nKundenloeschung nach 365 Tagen vorbereiten? (J/N)\n')
+    answer = input('\nKundenloeschung nach 2 Jahren vorbereiten? (J/N)\n')
     if 'J' in answer.upper():
         try:
             send_notification_for_customers_on_deletion(store)
