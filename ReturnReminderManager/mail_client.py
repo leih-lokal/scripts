@@ -44,7 +44,7 @@ class MailClient:
     def send(self, mail_to, subject, message):
         msg = MIMEMultipart()
         msg['From'] = self.mail_from
-        msg['To'] = mail_to
+        msg['To'] = mail_to.strip()
         msg['Subject'] = subject
         msg["Date"] = formatdate(localtime=True)
         print('current date', formatdate(localtime=True))
