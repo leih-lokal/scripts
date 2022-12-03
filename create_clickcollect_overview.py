@@ -217,7 +217,7 @@ if __name__=='__main__':
     opening_days_missed = []
     for ids_string, mode in zip(df_selected['Artikelnummer(n)'], df_selected['Ich möchte einen Gegenstand/Gegenstände..']):
         if mode=='abholen':
-            opening_days_since = ''
+            opening_days_since = '-'
         else:
             try:
                 opening_days_since = get_days_too_late_by_id(ids_string)
@@ -243,7 +243,7 @@ if __name__=='__main__':
 
 
     df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x.replace('\r', '').replace('\n', ' ' ).replace('\t', ''))
-    df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:20] + ('[...]' * (len(x)>15)))
+    #df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:20] + ('[...]' * (len(x)>15)))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('abholen', 'ab'))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('zurückgeben', 'z'))
 
