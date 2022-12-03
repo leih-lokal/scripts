@@ -9,7 +9,7 @@ import pandas as pd
 flatten = lambda t: [item for sublist in t for item in sublist]
 
 
-csv = pd.read_csv('C:/Users/Simon/Desktop/wp-statistics-2021-03-06-21-17.csv')
+csv = pd.read_csv('C:/Users/Simon/Downloads/wp-statistics-2022-11-25-16-13.csv')
 searches = csv[csv['type']=='search']
 
 
@@ -25,10 +25,9 @@ found_in_shortdesc = []
 for query in queries:
 
     ignore = ['Öffnungszeiten','Haushalt','Test', 'Fotowettbewerb', 'Freizeit', 'Vorstand', 'Leihlokal']
-    dont_exclude = ['Uhr', 'Lack','Keyboard', 'Spachtel', 'Hobel']
-    if query in dont_exclude:
-        pass
-    elif query in ignore:
+   
+
+    if query in ignore:
         continue
     elif any([query in x['name'] for x in products]):
         continue
@@ -36,7 +35,9 @@ for query in queries:
         continue
     elif any([query.lower() in x['short_description'].lower() for x in products]):
         continue
-    elif len(query)>30: continue
+    elif len(query)>30:
+        # print(query)
+        continue
 
     if not query in counts:
         counts[query] = 1
