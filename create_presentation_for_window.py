@@ -20,6 +20,9 @@ from scipy import misc
 import io
 from pptx.util import Cm, Pt
 from pptx.dml.color import RGBColor
+from PIL import Image
+import io
+
 #%%
 
 sortiment_url = 'https://www.buergerstiftung-karlsruhe.de/leihlokal/sortiment/?product-page='
@@ -28,8 +31,11 @@ def download_image(url, code):
     file = os.path.join('products', f'{code}.jpg')
     if os.path.exists(file): return True
     c = get(url)
-    with open(file, 'wb') as f:
-        f.write(c.content)
+    image = Image.open(io.BytesIO(c.content))
+    width, height = image.size
+    factor = 800/width
+    image = image.resize([int(width*factor), int(height*factor)])
+    image.save(file, format='jpeg', quality=80)
     return True
 
 def get(url, sleep=0.5):
@@ -137,8 +143,6 @@ if __name__ == '__main__':
     images_urls = [item.image for item in items]
     codes = [item.id for item in items]
     names = [item.name for item in items]
-    
-    
     
 
     if not os.path.isdir('products'):
