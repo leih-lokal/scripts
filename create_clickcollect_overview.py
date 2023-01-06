@@ -125,7 +125,7 @@ def show_date_picker(title=''):
 def download_bookings_csv():
 
     login_url = 'https://buergerstiftung-karlsruhe.de/wp-login.php'
-    csv_url = 'https://www.buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&list=1&search=&dfrom=&dto=&cal=2&cp_appbooking_csv=Export+to+CSV'
+    csv_url = 'https://buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&anonce=034bb4c437&list=1&search=&dfrom=&dto=&cal=2&cp_appbooking_csv3=Exportieren+nach+CSV'
 
     with open('settings.json', 'r') as f:
         settings = json.load(f)
@@ -154,15 +154,33 @@ def download_bookings_csv():
 
     return download.read().decode(encoding='iso-8859-1')
 
+def add_item_names(col):
+    with_names = []
+    for row in col:
+        if len(row)==0:
+            with_names.append('')
+            continue
+        item_nrs = row.split(',')
+        try:
+            item_nrs = sorted(item_nrs, key=lambda x:int(x))
+            item_names = [leihlokal.items.get(int(nr)).name for nr in item_nrs]
+        except Exception as e:
+            print(e)
+            item_names = ['error?' for nr in item_nrs]
+        tmp = [f'{nr.strip()}: {name.strip()}' for nr, name in zip(item_nrs, item_names)]
+        with_names.append('\n'.join(tmp))
+    return with_names
+    
+
 
 #%%
 if __name__=='__main__':
 
     
-    csv_file = download_bookings_csv()
+    csv_str = download_bookings_csv()
     print('Extracting data...')
     #%%
-    f = io.StringIO(csv_file)
+    f = io.StringIO(csv_str)
     df = pd.read_csv(f, sep=';')
 
     df.fillna('', inplace=True)
@@ -182,10 +200,8 @@ if __name__=='__main__':
 
     df = df.reindex(keep_columns, axis=1)
     df_selected = df.loc[df['app_date_1'] == date_str]
-    df_selected = df_selected.loc[df['app_status_1'] != 'Cancelled by customer']
-    df_selected = df_selected.loc[df['app_status_1'] != 'Cancelled']
-    df_selected = df_selected.loc[df['app_status_1'] != 'Rejected']
-    df_selected = df_selected.loc[df['app_status_1'] != 'Zusammengelegt']
+    df_selected = df_selected.loc[df['app_status_1'] == 'Genehmigt']
+    df_selected.drop('app_status_1', axis=1, inplace=True)
 
     df_selected = df_selected.convert_dtypes('str')
 
@@ -224,7 +240,7 @@ if __name__=='__main__':
             except:
                 opening_days_since = '?'
         opening_days_missed.append(opening_days_since)
-    df_selected.insert(9, 'Tage zu spät', opening_days_missed)
+    # df_selected.insert(9, 'Tage zu spät', opening_days_missed)
 
 
     df_selected.drop('app_date_1', axis=1, inplace=True)
@@ -239,8 +255,6 @@ if __name__=='__main__':
                         'Hast Du noch Kommentare oder Anmerkungen zu Deinem Termin?':'Kommentar',
                         'app_status_1': 'Status'},
                         inplace=True, axis=1)
-
-
 
     df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x.replace('\r', '').replace('\n', ' ' ).replace('\t', ''))
     #df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:20] + ('[...]' * (len(x)>15)))
@@ -260,7 +274,7 @@ if __name__=='__main__':
 
     df_selected = df_selected.sort_values('Zeit', ignore_index=True)
     df_selected.set_index('Zeit', inplace=True)
-    df_selected['Eingetragen?'] = ['[   ]']*len(df_selected)
+    df_selected['Done?'] = ['[   ]']*len(df_selected)
 
     row = ['', '* Nutzernummer und Pfandbeträge automatisch inferiert. Kann fehlerhaft sein!', *(len(df_selected.columns)-2)*['']]
     row2 = ['', 'Es werden sämtliche Zahlen im Textfeld als Gegenstandsnummern interpretiert und das Pfand in Klammern geschrieben.', *(len(df_selected.columns)-2)*['']]
@@ -269,6 +283,8 @@ if __name__=='__main__':
     df_selected.loc[len(df_selected)] = row2
 
     df_selected.index = df_selected.index.to_list()[:-2]+ ['', '']
+    df_selected.index.name = date_str[:-5]
+    df_selected['Artikelnummer(n)'] = add_item_names( df_selected['Artikelnummer(n)'])
 
     xls_file = choose_filesave(default_dir=os.path.expanduser('~\\Desktop\\'), default_filename=f'CC-Übersicht-{date_str}.xlsx')
 
@@ -296,31 +312,31 @@ if __name__=='__main__':
             idx_max = max([len(str(s)) for s in dataframe.index.values] + [len(str(dataframe.index.name))])
             # Then, we concatenate this to the max of the lengths of column name and its values for each column, left to right
             return [idx_max] + [max([len(str(s)) for s in dataframe[col].values[:-1]] + [len(col)]) for col in dataframe.columns]
-        
         for i, width in enumerate(get_col_widths(df_selected)):
             sheet.set_column(i, i, min(width+1, 27))
 
-
+        # align all vertically
         format = book.add_format()
-        format.set_align('center')
         format.set_align('vcenter')
-        # sheet.set_column('D:E', None, format)
+        for i, char in enumerate('ABCDEFG'):
+            sheet.set_column(f'{char}:{char}', sheet.col_sizes[i][0], format)
+
+
+        # align numbers horizontally
+        format = book.add_format({'text_wrap': True})
+        format.set_align('vcenter')
+        print(sheet.col_sizes[3][0])
         sheet.set_column('B:B', 3, format)
+        sheet.set_column('D:D', sheet.col_sizes[3][0], format)
         sheet.set_column('E:E', 4, format)
 
-        format = book.add_format()
+        # also set smaller font size to comments
+        format = book.add_format({'text_wrap': True})
         format.set_font_size(9)
-        sheet.set_column('E:E', 12, format)
-        sheet.set_column('F:F', 7, format)
-        sheet.set_column('G:G', 5, format)
-        sheet.set_column('G:G', 15)
-
-        format = book.add_format()
-        format.set_font_color('#808080')
         format.set_align('center')
-        sheet.set_column('H1:H32', 12, format)
+        sheet.set_column('F:F', 45, format) # Kommentar
+        sheet.set_column('G:G', 5, format) # Erledigt?
+        sheet.set_column('E:E', 12, format) # Pfand
+
 
     os.system(f'start excel.exe "{xls_file}"')
-    #%%
-    if 'clickandcollect_' in csv_file:
-        os.remove(csv_file)
