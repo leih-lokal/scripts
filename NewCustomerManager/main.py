@@ -22,13 +22,13 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
 
 def get_reminder_template(customer):
-    today = datetime.now(pytz.timezone('Europe/Berlin')).date()
+    today = datetime.now(pytz.timezone('Europe/Berlin'))
     s = f"""\
 Liebe/r {customer.firstname} {customer.lastname}!
 
 Herzlich willkommen im leih.lokal!
 
-Deine Nutzernummer ist: {customer.id}, du hast dich gestern bei uns registriert.
+Deine Mitgliedsnummer ist: {customer.id}.
 
 Hier ein paar wichtigen Infos:
 
@@ -36,17 +36,17 @@ Zur Ausleihe:
 - du erhälst einen Tag vor Rückgabe eine Erinnerungsmail.
 - du kannst die Ausleihe ggf. per Mail oder telefonisch verlängern.
 - solltest du deine Nutzernummer nicht parat haben, können wir dich ganz \
-    leicht über deinen Namen identifizieren.
+leicht über deinen Namen identifizieren.
 - sollte etwas mit dem geliehenen Gegenstand nicht funktionieren oder \
-    kaputt gehen, melde dich am besten umgehend bei uns per Mail.
+kaputt gehen, melde dich umgehend bei uns per Mail oder Telefon.
 - wenn du zwei Jahre nichts leihst, werden deine Daten bei uns automatisch gelöscht.
 
 Über das leih.lokal
 - bei uns kannst du komplett kostenlos Gegenstände leihen.
 - wir sind ein ehrenamtliches Projekt und freuen uns über deine Mithilfe!
 - wir suchen immer nach helfenden Händen, melde dich gerne bei uns \
-    (z.B. für Ladenschichten, Reparaturen von Gegenständen, Design von Flyern \
-     und Website, etc.)!
+(z.B. für Ladenschichten, Reparaturen von Gegenständen, Design von Flyern \
+und Website, etc.)!
 - oder mit einer kleinen Spende, jeder Euro hilft uns weiter zu bestehen.
 
 Ansonsten wünschen wir dir jetzt viel Spaß mit deiner Ausleihe!
@@ -86,9 +86,9 @@ if __name__ == '__main__':
     mail_client = MailClient()
 
     # not sure how well this plays for the github timezone?
-    yesterday = datetime.now(pytz.timezone('Europe/Berlin')).date() + timedelta(days=-1)
+    today = datetime.now(pytz.timezone('Europe/Berlin')).date()
 
-    new_customers = leihlokal.filter_customers(lambda x: x.registration_date==yesterday)
+    new_customers = leihlokal.filter_customers(lambda x: x.registration_date==today)
 
     # now for new customer, create and send the corresponding email
     # collect all errors, we will send them separately later in the script
