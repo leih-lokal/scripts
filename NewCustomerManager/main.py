@@ -24,35 +24,32 @@ logging.getLogger().setLevel(logging.DEBUG)
 def get_reminder_template(customer):
     today = datetime.now(pytz.timezone('Europe/Berlin'))
     s = f"""\
-Liebe/r {customer.firstname} {customer.lastname}!
+Liebe/r {customer.firstname} {customer.lastname},
 
-Herzlich willkommen im leih.lokal!
+herzlich willkommen im leih.lokal!
 
 Deine Mitgliedsnummer ist: {customer.id}.
 
-Hier ein paar wichtigen Infos:
+Hier ein paar wichtige Infos:
 
 Zur Ausleihe:
-- du erhälst einen Tag vor Rückgabe eine Erinnerungsmail.
+- du erhältst einen Tag vor Rückgabe eine Erinnerungsmail.
 - du kannst die Ausleihe ggf. per Mail oder telefonisch verlängern.
-- solltest du deine Nutzernummer nicht parat haben, können wir dich ganz \
-leicht über deinen Namen identifizieren.
-- sollte etwas mit dem geliehenen Gegenstand nicht funktionieren oder \
-kaputt gehen, melde dich umgehend bei uns per Mail oder Telefon.
+- solltest du deine Nutzernummer nicht parat haben, können wir dich auch über deinen Namen identifizieren.
+- wenn etwas mit dem geliehenen Gegenstand nicht funktioniert oder er kaputt geht, melde dich umgehend bei uns per Mail oder Telefon.
 - wenn du zwei Jahre nichts leihst, werden deine Daten bei uns automatisch gelöscht.
 
-Über das leih.lokal
-- bei uns kannst du komplett kostenlos Gegenstände leihen.
-- wir sind ein ehrenamtliches Projekt und freuen uns über deine Mithilfe!
-- wir suchen immer nach helfenden Händen, melde dich gerne bei uns \
-(z.B. für Ladenschichten, Reparaturen von Gegenständen, Design von Flyern \
-und Website, etc.)!
-- oder mit einer kleinen Spende, jeder Euro hilft uns weiter zu bestehen.
+Über das leih.lokal:
+- bei uns kannst du kostenlos Gegenstände leihen.
+- wir sind ein ehrenamtliches Projekt und freuen uns über deine Mithilfe.
+- wir suchen immer nach helfenden Händen; melde dich gerne bei uns (z.B. für Ladenschichten, Reparaturen von Gegenständen, Design von Flyern und Website, etc.).
+- auch mit einer (kleinen) Spende hilfst du uns, denn wir arbeiten komplett spendenfinanziert.
 
-Ansonsten wünschen wir dir jetzt viel Spaß mit deiner Ausleihe!
+Ansonsten wünschen wir dir jetzt viel Erfolg/Freude mit unseren Gegenständen!
 
-Liebe Grüße,
+Liebe Grüße
 das leih.lokal-Team
+
 www.leihlokal-ka.de
 
 Gerwigstr. 41, 76131 Karlsruhe
@@ -60,13 +57,6 @@ Gerwigstr. 41, 76131 Karlsruhe
 Telefon: 0721/ 4700 4551
 Email: info@leihlokal-ka.de
 
-//
-Das leih.lokal ist eine ehrenamtliches Projekt von der Bürgerstiftung Karlsruhe.
-Wir arbeiten komplett spendenfinanziert und freuen uns daher über Ihre Spende.
-Mach doch auch mit und hilf uns die Welt ein bisschen nachhaltiger zu gestalten!
-
-Lust mitzumachen? Wir sind immer auf Menschen die Lust haben in unserem bunten \
-Team mitzuwirken.
 //
 Diese Email wurde automatisch generiert. Sie kann daher Fehler enthalten. \
 Wir bitten dies zu entschuldigen.
