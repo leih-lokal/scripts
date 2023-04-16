@@ -43,27 +43,27 @@ def get_locations(customers):
 
     class LocationFinder():
         def __init__(self):
-            
-            
+
+
             if not os.path.isfile('locations.json'):
                 with open('locations.json', 'w') as f:
                     json.dump({}, f)
-            
+
             def randomString(stringLength=10):
                 """Generate a random string of fixed length """
                 letters = string.ascii_lowercase
                 return ''.join(random.choice(letters) for i in range(stringLength))
-            
+
             # use random string as useragent to prevent blocking
             self.geolocator = Nominatim(user_agent=randomString())
-    
+
         def get_location(self, address):
             spcial_char_map = {ord('ä'):'ae', ord('ü'):'ue', ord('ö'):'oe', ord('ß'):'ss'}
             address = address.lower()
             address = address.translate(spcial_char_map)
             with open('locations.json', 'r') as f:
                 found = json.load(f)
-            
+
             if address in found:
                 return None if found[address]=='' else found[address]
 
@@ -71,7 +71,7 @@ def get_locations(customers):
             if location is None:
                 address2 = address.replace('ae', 'ä').replace('ue', 'ü').replace('oe', 'ö')
                 location = self.geolocator.geocode(address2)
-                
+
             time.sleep(0.1)
             if location is None:
                 found[address] = ''
@@ -90,7 +90,7 @@ def get_locations(customers):
     locations = []
     finder = LocationFinder()
     t = 1
-    for i, customer in enumerate(tqdm(customers)):
+    for i, customer in enumerate(tqdm(customers, desc='fetching locations')):
         nr = customer.house_number
         street = customer.street
         city = customer.city
@@ -121,21 +121,21 @@ def make_heatmap(locations, filename='./heatmap.html', overlay=''):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     startingLocation = [49.006239, 8.411572]
     hmap = folium.Map(location=startingLocation, zoom_start=14)
-    
+
     # Creates a heatmap element
     hm_wide = HeatMap( locations,
                         min_opacity=.5,
                         radius=21, blur=25)
-    
+
     # Adds the heatmap element to the map
     hmap.add_child(hm_wide)
-    
+
     # Saves the map to heatmap.hmtl
     hmap.save(filename)
     hti = Html2Image(custom_flags=['--virtual-time-budget=1000'])
 
     png_file = hti.screenshot(url=filename, save_as=os.path.basename(filename) + '.png')[0]
-    
+
     shutil.move(png_file, filename + '.png')
     img = Image.open(filename + '.png')
     draw = ImageDraw.Draw(img)
@@ -146,8 +146,8 @@ def make_heatmap(locations, filename='./heatmap.html', overlay=''):
     img = img.resize([int(x*0.5) for x in img.size])
     img.save(filename + '.png')
     return img
-    
-    
+
+
 
 def plot_(store):
     import matplotlib.pyplot as plt
@@ -155,7 +155,7 @@ def plot_(store):
     months = [str(r.rented_on.month)+'/'+str(r.rented_on.year-2000) for r in rentals]
     plt.hist(months)
     plt.title('Ausleihen pro Monat')
-    
+
     rented = [r.rented_on.strftime('%A') for r in rentals]
     rented = [d for d in rented if not d in ['Sunday', 'Tuesday']]
     plt.figure()
@@ -179,19 +179,19 @@ if __name__ == '__main__':
     customers = sorted(store.customers.values(), key=lambda x: x.registration_date)
     rentals = store.rentals
     items = sorted(store.items.values(), key=lambda x: x.id)
-    
+
     #%% create heatmap
     locations = get_locations(customers)
-    
+
     #%% make heatmap with animation
 
     # make steps of 30 days to walk through the year(s)
     steps = np.where(np.diff([c.registration_date.month for c in customers]))[0]
     # steps = [np.argmax(days>i) for i in range(61, max(days), 30)]
     dates = [customers[i].registration_date.strftime('%b %Y') for i in steps]
-    
+
     pngs = Parallel(n_jobs=-1)(delayed(make_heatmap)(locations[:s],
-                        os.path.abspath(f'./plots/heatmap/heatmap_{i:04d}.html'), 
+                        os.path.abspath(f'./plots/heatmap/heatmap_{i:04d}.html'),
                         overlay=f'{dates[i]}') for i, s in enumerate(tqdm(steps, desc='creating heatmap PNGs')))
 
     duration = ([0.3]*(len(pngs)-1)) + [5]
@@ -262,7 +262,7 @@ if __name__ == '__main__':
 
 
     # dates = [d for d in dates if d.weekday() in [0, 3,4,5]]
-    plt.figure(figsize=[6,4 ], maximize=False)
+    plt.figure(figsize=[6,4 ])
     df = pd.DataFrame(dates, columns=['date']).astype('datetime64')
     df.groupby([df["date"].dt.year, df["date"].dt.month]).count()[:-1].plot(kind="bar", ax=plt.gca())
     plt.xlabel('Monat', {'fontsize':14})
@@ -277,27 +277,27 @@ if __name__ == '__main__':
 
     plt.tight_layout()
     plt.pause(0.1)
-    plt.savefig('./plots/lockdown.png')
+    plt.savefig('./lockdown.png')
 
-    #%%
+    #%% anzahl pro tag
     fig, ax = plt.subplots(1,1)
     # limit to after 2021
-    df = df[df['date']>datetime.datetime(2021,1,1)]
+    df = df[df['date']>datetime.datetime(2022,1,1)]
     total_weeks = len(df.groupby([df["date"].dt.week, df["date"].dt.year]).count())
     df_perday = df.groupby(df["date"].dt.dayofweek).count().drop(index=[1, 2, 6])/total_weeks
-    df_perday.index = ['Montag', 'Donnerstag', 'Freitag', 'Samstag']    
+    df_perday.index = ['Montag', 'Donnerstag', 'Freitag', 'Samstag']
     df_perday.plot(kind="bar", ax=ax, legend=False)
     ax.set_xticklabels(['Montag', 'Donnerstag', 'Freitag', 'Samstag'])
-    ax.set_title('Ausleihen pro Tag im Durchschnitt (2021)', {'fontsize':20})
-    ax.set_xlabel('Tag', {'fontsize':16})
-    ax.set_ylabel('Ausleihen in diesem Tag', {'fontsize':16})
+    ax.set_title('Ausleihen pro Tag im Durchschnitt (2022)', {'fontsize':20})
+    ax.set_xlabel('Wochentag', {'fontsize':16})
+    ax.set_ylabel('Ø Anzahl Ausleihen', {'fontsize':16})
     plt.xticks(rotation=25)
     plt.tight_layout()
 
     #%% anzahl ausleihen pro kunde
 
     counts = [min(len(c.rentals), 10) for c in customers if len(c.rentals)>0]
-    plt.figure(figsize=[7, 5], maximize=False)
+    plt.figure(figsize=[7, 5])
     sns.distplot(counts, norm_hist=False, kde=False, bins=np.arange(1, 12)-0.49, hist_kws={'alpha':0.8})
     plt.xlabel('Anzahl Ausleihen', {'fontsize':16})
     plt.ylabel('Anzahl der Nutzer:in', {'fontsize':16})
@@ -311,8 +311,8 @@ if __name__ == '__main__':
 
     counts = [min(len(i.rentals), 16) for i in items if i.wc_url!='']
 
-    plt.figure(figsize=[7, 5], maximize=False)
-    sns.distplot(counts, norm_hist=False, kde=False, hist_kws={'alpha':0.8})
+    plt.figure(figsize=[7, 5])
+    sns.histplot(counts, alpha=0.8, binrange=(0, 15), binwidth=3)
     plt.xlabel('Anzahl Ausleihen', {'fontsize':16})
     plt.ylabel('Anzahl der Gegenstände', {'fontsize':16})
     plt.title('Anzahl der Ausleihen pro Gegenstand im Durchschnitt', {'fontsize':16})
@@ -323,4 +323,3 @@ if __name__ == '__main__':
     topsflops = sorted([i for i in items if i.wc_url!=''], key=lambda x:len(x.rentals))
     x = pd.DataFrame({'Name':[x.name for x in items], 'Anzahl':[len(x.rentals) for x in items]})
     x=x.sort_values('Anzahl', ascending=False)
-    
