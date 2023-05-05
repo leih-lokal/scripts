@@ -13,7 +13,8 @@ def _appointment_to_dict(headers):
 
 
 def _clean_data(appointment):
-    items = re.split(',|\s', appointment["Artikelnummer(n)"])
+    items = appointment["Artikelnummer(n)"].replace(";", ",")
+    items = re.split(',|\s', items)
     items = list(map(lambda item: re.sub('[^0-9]', '', item), items))
     items = list(filter(lambda item: len(item) > 0, items))
     items = list(map(lambda item: int(item), items))
