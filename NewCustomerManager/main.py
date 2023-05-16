@@ -79,6 +79,7 @@ if __name__ == '__main__':
     today = datetime.now(pytz.timezone('Europe/Berlin')).date()
 
     new_customers = leihlokal.filter_customers(lambda x: x.registration_date==today)
+    logging.error(f"{len(new_customers)} new customers: {new_customers}")
 
     # now for new customer, create and send the corresponding email
     # collect all errors, we will send them separately later in the script
