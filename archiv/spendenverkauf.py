@@ -8,16 +8,17 @@ all items that we had for sale in our flea-market
 
 @author: Simon
 """
+import sys; sys.path.append('..')
 import json
-from fenster_bildschirm import get_leihlokaldata
-from leihlokal import Store
+# from fenster_bildschirm import get_leihlokaldata
+from leihlokal import LeihLokal
 
 with open('settings.json', 'r', encoding='latin1') as f:
     settings = json.load(f)
 excel_file = settings['leihgegenstaendeliste']
 print('Lade Datenbank...')
 store = Store.parse_file(excel_file)
-
+asd
 
 #%%
 

@@ -16,8 +16,8 @@ import mailbox
 import webbrowser
 from tqdm import tqdm
 
-with open('settings.json', 'r', encoding='utf-8') as f:
-    settings = json.load(f)
+# with open('settings.json', 'r', encoding='utf-8') as f:
+#     settings = json.load(f)
 
 ############ SETTINGS ################################################
 
@@ -26,9 +26,9 @@ def get_reminder_template(customer, rental):
     to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
     string = f"""Liebe:r {customer.firstname} {customer.lastname}
 
-danke, dass Sie Ausleiher:in im leih.lokal sind. 
+danke, dass Sie Ausleiher:in im leih.lokal sind.
 Wir freuen uns, dass immer mehr Menschen Gegenstände leihen.
-   
+
 Bei der Ausleihe am {rented_on} hatten wir als Rückgabefrist den {to_return_on} vereinbart.
 Damit auch andere Nutzer von unserem Angebot profitieren können, bitten wir Sie, den Gegenstand {rental.item_name} (Nr. {rental.item_id}) zurückzubringen.
 Mit jedem Öffnungstag fällt eine kleine Säumnisgebühr von 2 Euro an, die dem Erhalt des leih.lokals zugute kommt, d.h. zum jetzigen Zeitpunkt 2 Euro.
@@ -67,7 +67,7 @@ def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff
     if len(sent)==0:
         raise FileNotFoundError(f'mailbox not found at {mboxfile}. '
                                 'Please add in file under SETTINGS / thunderbird-profile')
-    
+
     customers_reminded = []
 
     regex = re.compile("<(.*?)>")
@@ -89,7 +89,7 @@ def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff
         if not isinstance(subject, str) and subject:
             try: subject = subject.decode()
             except: subject = str(subject)
-        
+
         # do not send reminder if last one has been sent within the last 10 days
         if pattern in subject and diff.days<cutoff_days:
             find_customer = lambda customer: customer.email==to
@@ -98,7 +98,7 @@ def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff
                 customer = customers[0]
                 customer.last_deletion_reminder = date
                 customers_reminded.append(customer)
-            if len(customers)>1: 
+            if len(customers)>1:
                 print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
     return customers_reminded
 
@@ -119,12 +119,12 @@ def send_notifications_for_overdue_rental(store):
     rentals_reminded = len([r for r in rentals_overdue if r.customer_id  in customers_reminded_ids])
     print(f'{len(rentals_overdue)} überfällige Ausleihen gefunden. ({rentals_reminded} schon erinnert.)')
     show_n = 5
-    if len(rentals)>show_n: 
+    if len(rentals)>show_n:
         show_n = 'nan'
         while not show_n.isdigit():
             show_n = input('Für wieviele moechtest du jetzt eine Email erstellen?\n'
                            'Zahl eintippen und mit <enter> bestaetigen.\n')
-            if show_n=='': 
+            if show_n=='':
                 print('abgebrochen...')
                 return
             if not show_n.isdigit() or int(show_n)<1:
@@ -132,19 +132,19 @@ def send_notifications_for_overdue_rental(store):
         show_n = int(show_n)
 
     for rental in rentals[:show_n]:
-        if not rental.customer_id in customers_reminded_ids: 
+        if not rental.customer_id in customers_reminded_ids:
             send_return_reminder(rental)
 
-        
-    if len(rentals_overdue)>show_n: 
+
+    if len(rentals_overdue)>show_n:
         printed = '\n'
         for rental in rentals_overdue[show_n:]:
             customer = store.customers.get(int(rental.customer_id))
             printed += f'customer {rental.customer_id} ({customer.firstname} {customer.lastname}): item {rental.item_id} (rental.item_name) on {rental.to_return_on}\n'
-       
+
         print(f'\n\n{len(rentals_overdue)} Gegenstände sind insgesamt überfällig.\n'\
                f'Noch {len(rentals_overdue)-rentals_reminded} Loescherinnerungen sind zu senden.\n'\
-               f'Nur die ersten {show_n} werden automatisch erstellt. \nDer Rest ist: \n' + printed + 
+               f'Nur die ersten {show_n} werden automatisch erstellt. \nDer Rest ist: \n' + printed +
                f'\n\nEnde der Liste. Nachdem die Mails geschickt wurden kann das '
                f'Script erneut ausgeführt werden und die nächsten {show_n} werden erzeugt.')
     return True
@@ -166,7 +166,7 @@ def send_notification_for_customers_on_deletion(store):
         rentals_2years = store.filter_rentals(lambda r: r.rented_on > today-delta2y)
         # get all customers that rented something in the last two years
         customers_ids_2years = set([r.customer_id for r in rentals_2years])
-        
+
         # lambda to get all that had 'last_interaction' before two years ago
         func = lambda c: (today - c.last_interaction()).days >= 365*2
         customers_old = store.filter_customers(func)
@@ -177,36 +177,36 @@ def send_notification_for_customers_on_deletion(store):
         already_sent = [c for c in already_sent if c in customers_old]
         customers_old = [c for c in customers_old if c not in already_sent]
         customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
-        
+
         # this list has all kunden which did not respons within 10 days.
         to_delete = [c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7]
         print(f'{len(customers_old)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
 
         print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert und müssen sich melden \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
-        
+
         show_n = 5
-        if len(customers_old)>show_n: 
+        if len(customers_old)>show_n:
             show_n = 'nan'
             while not show_n.isdigit():
                 show_n = input('Für wieviele moechtest du jetzt eine Email erstellen?\n'
                                'Zahl eintippen und mit <enter> bestaetigen.\n')
-                if show_n=='': 
+                if show_n=='':
                     print('abgebrochen...')
                     return
                 if not show_n.isdigit() or int(show_n)<1:
                     print('Muss eine Zahl sein.')
             show_n = int(show_n)
-            
+
         for customer in customers_old[:show_n]:
-            # if not rental.customer_id in customers_reminded_ids: 
+            # if not rental.customer_id in customers_reminded_ids:
             send_deletion_reminder(customer)
-            
-        if len(customers_old)>show_n: 
+
+        if len(customers_old)>show_n:
             printed = '\n'
             for customer in customers_old:
                 customer = store.customers.get(customer.id, f'NOT FOUND: {customer.id}')
                 printed += f'{customer} \n'
-           
+
             print(f'\n\nDie restlichen sind:\n{printed}\n\nBitte verschicke'
                   ' die eMails und lasse das Script erneut laufen.')
         print('Die folgenden Kunden haben sich 7 Tage nicht gemeldet und koennen geloescht werden:\n' +
@@ -220,11 +220,11 @@ def send_deletion_reminder(customer):
     subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach Inaktivität (Kunden-Nr. {customer.id}).'
     recipient = customer.email
 
-    if not '@' in recipient: 
+    if not '@' in recipient:
         print(f'Keine Email: {customer}, direkt löschen.')
         return
     webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
-    return 
+    return
 
 def send_return_reminder(rental):
     """
@@ -237,11 +237,11 @@ def send_return_reminder(rental):
     subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
     recipient = customer.email
 
-    if not '@' in recipient: 
+    if not '@' in recipient:
         print(f'{customer.firstname} {customer.lastname}({customer.id}, rented {rental.item_id}:{rental.item_name}) has no email. Please call manually')
         return
     webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
-    return 
+    return
 
 
 
@@ -259,7 +259,7 @@ def check_website_status(store):
     curr_rental_items = list(set([rental.item for rental in store.filter_rentals(lambda x:not x.returned_on)]))
     curr_reserved_items = store.filter_items(lambda x: x.status=='reserved')
     curr_inrepair_items = store.filter_items(lambda x: x.status=='onbackorder')
-    
+
     items_no_img_db = store.filter_items(lambda x: (x.image=='') & (x.status!='deleted'))
     items_no_img_wc = {id:item for id, item in wc_products.items() if 'woocommerce-placeholder' in item['img']}
 
@@ -267,7 +267,7 @@ def check_website_status(store):
     for code in sorted(unavailable_wc):
         name = unavailable_wc[code]['name']
         item = store.items.get(int(code))
-        if item is None: 
+        if item is None:
             print(f'{item} nicht gefunden')
             continue
         if item not in curr_rental_items \
@@ -291,7 +291,7 @@ def check_website_status(store):
     curr_reserved_items = sorted(curr_reserved_items, key=lambda x:x.last_update)
     for item in curr_reserved_items:
         print(f'Am {item.last_update} reserviert: {item}')
-    
+
     print('\n------- Gegenstände mit fehlendem Bild -------')
     for item in items_no_img_wc:
         print(f'{store.items[item]} hat kein Bild auf Webseite und Leihsoftware')
