@@ -59,8 +59,7 @@ class MailClient:
 
         # send the message via the server.
         logging.info(f"sending mail to {mail_to}: {msg['Subject']}")
-        logging.info("STOP DUMMY ONLY")
-        return
+
         self.smpt.sendmail(msg['From'], mail_to, msg.as_string())
 
         self.imap.append('INBOX.Archives', '\\Seen',

@@ -65,7 +65,7 @@ def send_mails():
             continue
         try:
             email_msg = templates.get_email_template(customer)
-            subject = "[leih.lokal] Willkommen beim leih.lokal!"
+            subject = "[leih.lokal] Heute außerplanmäßig geschlossen!"
             mail_to = formataddr((f"{customer.firstname} {customer.lastname}",
                                   customer.email))
             mail_client.send(mail_to, subject, email_msg)
