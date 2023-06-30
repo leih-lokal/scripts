@@ -40,10 +40,7 @@ def update_item_status(item_doc, status_couchdb, status_wc):
 def reserve_items(items):
     for item_doc in couchdb_client.get_items(items):
         item_doc = couchdb_client.as_document(item_doc)
-        if not item_doc["exists_more_than_once"]:
-            update_item_status(item_doc, "reserved", "outofstock")
-        else:
-            logging.debug(f"Did not reserve item {item_doc['id']} because it exists more than once")
+        update_item_status(item_doc, "reserved", "outofstock")
 
 
 def appointment_to_string(appointment):
