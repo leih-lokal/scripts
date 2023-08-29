@@ -269,7 +269,7 @@ if __name__=='__main__':
             for _ in range(max_slots-sum(df_selected['Zeit']==slot)):
                 missing_slots.append(slot)
 
-    df_selected = df_selected.append([{'Zeit': s} for s in missing_slots], ignore_index=True)
+    df_selected = pd.concat([df_selected, pd.DataFrame({'Zeit': [s for s in missing_slots]}), ignore_index=True)])
     df_selected.fillna('', inplace=True)
 
     df_selected = df_selected.sort_values('Zeit', ignore_index=True)
