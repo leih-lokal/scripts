@@ -14,12 +14,15 @@ import pandas as pd
 import datetime
 from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
+import tkcalendar
 import json
 import io
 from mechanize import Browser #pip install mechanize
 import leihlokal
 import itertools
 import holidays
+import tkinter as tk
+from tkcalendar import Calendar
 
 leihlokal = leihlokal.LeihLokal()
 customers = leihlokal.customers
@@ -79,7 +82,7 @@ def get_deposit_by_ids(ids_string):
 def choose_filesave(default_dir=None, default_filename='übersicht.xlsx', title='Bitte Speicherort wählen'):
     """
     Open a file chooser dialoge with tkinter.
-    
+
     :param default_dir: Where to open the dir, if set to None, will start at wdir
     :param exts: A string or list of strings with extensions etc: 'txt' or ['txt','csv']
     :returns: the chosen file
@@ -95,11 +98,8 @@ def choose_filesave(default_dir=None, default_filename='übersicht.xlsx', title=
     root.update()
     root.destroy()
     return name.name
-  
-def show_date_picker(title=''):
-    import tkinter as tk
-    from tkcalendar import Calendar
 
+def show_date_picker(title=''):
     def cal_done():
         top.withdraw()
         root.quit()
@@ -138,7 +138,7 @@ def download_bookings_csv():
     br.addheaders = [("User-agent","Python Script using mechanize")]
     print('Connecting to WP.')
     sign_in = br.open(login_url)  #the login url
-     
+
     br.select_form(nr = 0) #accessing form by their index. Since we have only one form in this example, nr =0.
     br["log"] = uname #the key "username" is the variable that takes the username/email value
     br["pwd"] = passw    #the key "password" is the variable that takes the password value
@@ -170,13 +170,13 @@ def add_item_names(col):
         tmp = [f'{nr.strip()}: {name.strip()}' for nr, name in zip(item_nrs, item_names)]
         with_names.append('\n'.join(tmp))
     return with_names
-    
+
 
 
 #%%
 if __name__=='__main__':
 
-    
+
     csv_str = download_bookings_csv()
     print('Extracting data...')
     #%%
@@ -269,7 +269,7 @@ if __name__=='__main__':
             for _ in range(max_slots-sum(df_selected['Zeit']==slot)):
                 missing_slots.append(slot)
 
-    df_selected = pd.concat([df_selected, pd.DataFrame({'Zeit': [s for s in missing_slots]}), ignore_index=True)])
+    df_selected = pd.concat([df_selected, pd.DataFrame({'Zeit': [s for s in missing_slots]})], ignore_index=True)
     df_selected.fillna('', inplace=True)
 
     df_selected = df_selected.sort_values('Zeit', ignore_index=True)
@@ -319,7 +319,7 @@ if __name__=='__main__':
         format = book.add_format()
         format.set_align('vcenter')
         for i, char in enumerate('ABCDEFG'):
-            sheet.set_column(f'{char}:{char}', sheet.col_sizes[i][0], format)
+            sheet.set_column(f'{char}:{char}', sheet.col_info[i][0], format)
 
 
         # align numbers horizontally
@@ -327,7 +327,7 @@ if __name__=='__main__':
         format.set_align('vcenter')
         print(sheet.col_sizes[3][0])
         sheet.set_column('B:B', 3, format)
-        sheet.set_column('D:D', sheet.col_sizes[3][0], format)
+        sheet.set_column('D:D', sheet.col_info[3][0], format)
         sheet.set_column('E:E', 4, format)
 
         # also set smaller font size to comments
