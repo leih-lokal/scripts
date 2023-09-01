@@ -1,0 +1,6 @@
+pandas
+tkcalendar
+holidays
+mechanize
+xlsxwriter
+cloudant

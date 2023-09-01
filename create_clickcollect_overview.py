@@ -9,17 +9,17 @@ and creates an overview for the current day in XLS format to print out
 """
 import os
 import re
+import subprocess
+import platform
 import datetime
 import pandas as pd
 import datetime
 from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
-import tkcalendar
 import json
 import io
 from mechanize import Browser #pip install mechanize
 import leihlokal
-import itertools
 import holidays
 import tkinter as tk
 from tkcalendar import Calendar
@@ -28,6 +28,14 @@ leihlokal = leihlokal.LeihLokal()
 customers = leihlokal.customers
 items = leihlokal.items
 rentals = leihlokal.rentals
+
+def startfile(filepath):
+    if platform.system() == 'Darwin':
+        subprocess.call(('open', filepath))
+    elif platform.system() == 'Windows':
+        os.startfile(filepath)
+    else:
+        subprocess.call(('xdg-open', filepath))
 
 def calculate_opening_days_since(date):
     BW_holidays = holidays.CountryHoliday('DE', prov='BW')
@@ -325,7 +333,6 @@ if __name__=='__main__':
         # align numbers horizontally
         format = book.add_format({'text_wrap': True})
         format.set_align('vcenter')
-        print(sheet.col_sizes[3][0])
         sheet.set_column('B:B', 3, format)
         sheet.set_column('D:D', sheet.col_info[3][0], format)
         sheet.set_column('E:E', 4, format)
@@ -339,4 +346,4 @@ if __name__=='__main__':
         sheet.set_column('E:E', 12, format) # Pfand
 
 
-    os.system(f'start excel.exe "{xls_file}"')
+    startfile(xls_file)

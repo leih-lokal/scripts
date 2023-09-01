@@ -1,0 +1,9 @@
+pygame
+pyexcel pyexcel-ods pyexcel-ods3
+pprint
+win32gui
+win32con
+win32api
+win32ui
+tqdm
+mss

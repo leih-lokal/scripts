@@ -1,9 +1,0 @@
-pip install pygame
-pip install pyexcel pyexcel-ods pyexcel-ods3
-pip instal pprint
-pip install win32gui
-pip install win32con
-pip install win32api
-pip install win32ui
-pip install tqdm
-pip install mss
