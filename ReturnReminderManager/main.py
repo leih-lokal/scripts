@@ -29,21 +29,21 @@ def get_reminder_template(customer, rentals):
     s = f"""\
 Liebe/r {customer.firstname} {customer.lastname},
 
-Morgen wird die Rückgabe {'der' if several else 'des'} \
+morgen wird die Rückgabe {'der' if several else 'des'} \
 {'Gegenstände' if several else 'Gegenstands'}: "{items_str}" fällig. \
-Wir bitten Sie, {'die Gegenstände' if several else 'den Gegenstand'} morgen zu \
+Wir bitten dich, {'die Gegenstände' if several else 'den Gegenstand'} morgen zu \
 den Öffnungszeiten zurück zu bringen.
 
 Sollte die maximale Leihdauer von drei Wochen noch nicht erreicht sein, \
-ist es ggf. möglich, die Ausleihe auf Nachfrage zu verlängern. Bitte fragen Sie
+ist es ggf. möglich, die Ausleihe auf Nachfrage zu verlängern. Bitte frag
 hierzu während der Öffnungszeiten telefonisch oder jederzeit per Mail nach. \
-Bitte haben Sie Verständnis, dass, je nach Nachfrage des Gegenstandes, eine \
+Bitte hab Verständnis, dass, je nach Nachfrage des Gegenstandes, eine \
 Verlängerung nicht immer möglich ist.
 
-Sollten wir morgen nicht geöffnet haben, geben Sie \
+Sollten wir morgen nicht geöffnet haben, gib \
 {'die Gegenstände' if several else 'den Gegenstand'} einfach am \
 nächsten Öffnungstag ab. Weitere Informationen \
-finden Sie auf unserer Webseite.
+findest du auf unserer Webseite.
 
 Liebe Grüße, 
 das leih.lokal-Team
@@ -53,11 +53,11 @@ Gerwigstr. 41, 76131 Karlsruhe
 Telefon: 0721/ 4700 4551
 
 //
-Das leih.lokal ist eine ehrenamtliches Projekt von der Bürgerstiftung Karlsruhe.
-Wir arbeiten komplett spendenfinanziert und freuen uns daher über Ihre Spende.
+Das leih.lokal ist ein ehrenamtliches Projekt von der Bürgerstiftung Karlsruhe.
+Wir arbeiten komplett spendenfinanziert und freuen uns daher über deine Spende.
 Mach doch auch mit und hilf uns die Welt ein bisschen nachhaltiger zu gestalten!
 
-Lust mitzumachen? Wir sind immer auf Menschen die Lust haben in unserem bunten \
+Lust mitzumachen? Wir sind immer auf der Suche nach Menschen, die Lust haben, in unserem bunten \
 Team mitzuwirken.
 // 
 Diese Email wurde automatisch generiert. Sie kann daher Fehler enthalten. \
