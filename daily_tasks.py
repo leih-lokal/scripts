@@ -179,7 +179,7 @@ def send_notification_for_customers_on_deletion(store):
         customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
 
         # this list has all kunden which did not respons within 10 days.
-        to_delete = [c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7]
+        to_delete = sorted([c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7], key=lambda c: c.id)
         print(f'{len(customers_old)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
 
         print(f'{len(already_sent)-len(to_delete)} Wurden schon erinnert und müssen sich melden \n{len(to_delete)} haben sich nach 7 Tagen nicht gemeldet und koennen geloescht werden.')
