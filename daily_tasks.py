@@ -68,7 +68,7 @@ def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff
         raise FileNotFoundError(f'mailbox not found at {mboxfile}. '
                                 'Please add in file under SETTINGS / thunderbird-profile')
 
-    customers_reminded = []
+    customers_reminded = set()
 
     regex = re.compile("<(.*?)>")
 
@@ -92,12 +92,12 @@ def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff
 
         # do not send reminder if last one has been sent within the last 10 days
         if pattern in subject and diff.days<cutoff_days:
-            find_customer = lambda customer: customer.email==to
+            find_customer = lambda customer: customer.email.strip() == to
             customers = store.filter_customers(find_customer)
             if len(customers)==1:
                 customer = customers[0]
                 customer.last_deletion_reminder = date
-                customers_reminded.append(customer)
+                customers_reminded.add(customer)
             if len(customers)>1:
                 print(f'Warning, several customers with same email were found: {to}:{[str(c)for c in customers]}')
     return customers_reminded
@@ -174,7 +174,7 @@ def send_notification_for_customers_on_deletion(store):
         customers_old = [c for c in customers_old if not c.id in customers_ids_2years]
 
         already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=9999)
-        already_sent = [c for c in already_sent if c in customers_old]
+        already_sent = set([c for c in already_sent if c in customers_old])
         customers_old = [c for c in customers_old if c not in already_sent]
         customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
 
