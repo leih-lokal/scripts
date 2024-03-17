@@ -19,7 +19,7 @@ Liebe/r {customer.firstname} {customer.lastname}.
 Heute wäre deine Rückgabe eines unserer Gegenstände fällig. \
 Leider muss das leih.lokal heute aus unvorhergesehenen Gründen geschlossen bleiben.
 
-Deine Ausleihe kannst du daher einfach am darauffolgenden Öffnungstag zurück bringen, kein Problem!
+Deine Ausleihe kannst du daher einfach am darauffolgenden Öffnungstag zurück bringen, kein Problem! Bitte stelle keine ausgeliehenen Gegenstände bei uns vor der Tür ab, die Rückgabe läuft bei uns nur persönlich.
 
 Wir bitten um Entschuldigung für die Unannehmlichkeit. Bei Fragen wende dich gerne per Mail an uns.
 
