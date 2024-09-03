@@ -171,14 +171,15 @@ def send_notification_for_customers_on_deletion(store):
         func = lambda c: (today - c.last_interaction()).days >= 365*2
         customers_old = store.filter_customers(func)
         # sanity check, really no rentals on their id?
-        customers_old = [c for c in customers_old if not c.id in customers_ids_2years]
+        customers_old = [c for c in customers_old if not c.id in customers_ids_2years]  # customers that are candidate for deletion
 
-        already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=9999)
-        already_sent = set([c for c in already_sent if c in customers_old])
-        customers_old = [c for c in customers_old if c not in already_sent]
+        already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=9999)  # customers that had already been sent an email (ever) (-> why ever?)
+        already_sent = set([c for c in already_sent if c in customers_old])  # customers that had already been sent an email and didn't have an interaction since
+        customers_old = [c for c in customers_old if c not in already_sent]  # customers that are candidates for deletion due to inactivity, but didn't get an email, yet
         customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
 
-        # this list has all kunden which did not respons within 10 days.
+        # this list has all customers that had been sent an email more than 7 days ago and didn't respond since
+        # more precisely, this list will effectively contain customers that got an email less than 'cutoff_days' (see above) ago, but more than 7 days ago (and of course didn't have an interaction in the past two years)
         to_delete = sorted([c for c in already_sent if (datetime.datetime.now().date() - c.last_deletion_reminder).days>7], key=lambda c: c.id)
         print(f'{len(customers_old)} Kunden gefunden die seit 365 Tagen nichts geliehen haben.')
 
