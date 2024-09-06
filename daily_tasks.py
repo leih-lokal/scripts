@@ -59,8 +59,12 @@ def get_deletion_template(customer):
 
 ############ FUNCTIONS ################################################
 
-def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff_days=7) -> None:
-    """Get all customers that have recently received a mail with the given pattern"""
+def get_recently_sent_reminders(store, pattern='[leih.lokal] Erinnerung', cutoff_days=8) -> None:
+    """
+    Get all customers that have recently received a mail with the given pattern.
+    Note: cutoff_days is best chosen as some time interval _larger_ than the user's maximum reply time and _smaller_ than the inactivity threshold.
+    E.g., if users may be deleted after 730 days of inactivity and have one week to reply to the account confirmation week, cutoff days should be in [8, 729].
+    """
     mboxfile = settings['thunderbird-profile']
     sent = mailbox.mbox(mboxfile)
 
@@ -173,7 +177,21 @@ def send_notification_for_customers_on_deletion(store):
         # sanity check, really no rentals on their id?
         customers_old = [c for c in customers_old if not c.id in customers_ids_2years]  # customers that are candidate for deletion
 
-        already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=9999)  # customers that had already been sent an email (ever) (-> why ever?)
+        # note: when wanting to notify users after two years of inactivity and delete them after another one week, cutoff days_must be chosen to be somewhere in [8, 729]
+        # if cutoff_days is <= 7, users will receive emails every 7 days unless they renew their account and will never actually be marked for deletion
+        # if custoff_days is >= 2*365, users will not receive another email after they had already received one once (2 years ago), but marked for deletion immediately
+        #
+        #  see https://anchr.io/i/Eemtt.jpg for a possible timeline example:
+        #   - after first two years, user receives email
+        #   - user confirms account four days later -> user not deleted 7 days later
+        #   - user is inactive for the next 2 years
+        #   - user then (after total of 4 years now) receives another email, which she doesn't respond to
+        #   - every day from the day where the mail was sent, we look back 365 (or less, e.g. just 8) days in the mailbox
+        #   - in the seventh day, we'll observe that user had received a mail, but longer than 7 days ago, and still didn't have any activity -> gets deleted
+        #
+        # see https://anchr.io/i/zscu7.jpg for an overview of the user's presence in each of the below lists (mistake in the table: should be [8, 729])
+
+        already_sent = get_recently_sent_reminders(store, pattern='[leih.lokal] Löschung', cutoff_days=365)  # customers that had already been sent an email (look back up to one year)
         already_sent = set([c for c in already_sent if c in customers_old])  # customers that had already been sent an email and didn't have an interaction since
         customers_old = [c for c in customers_old if c not in already_sent]  # customers that are candidates for deletion due to inactivity, but didn't get an email, yet
         customers_old = [c for c in customers_old if not (c.lastname=='' and c.firstname=='')]
