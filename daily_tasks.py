@@ -279,7 +279,11 @@ def check_website_status(store):
     # unavailable_couchdb = self.filter_items(lambda x:x.status_on_website!='outofstock')
     curr_rental_items = list(set([rental.item for rental in store.filter_rentals(lambda x:not x.returned_on)]))
     curr_reserved_items = store.filter_items(lambda x: x.status=='reserved')
-    curr_inrepair_items = store.filter_items(lambda x: x.status=='onbackorder')
+    curr_inrepair_items = store.filter_items(lambda x: x.status=='onbackorder' or x.status =='repairing')
+    curr_lost_items = store.filter_items(lambda x: x.status=='lost')
+    curr_forsale_items = store.filter_items(lambda x: x.status=='forsale')
+
+    non_rentable_item_ids = set(map(lambda item: item.id, [*curr_reserved_items, *curr_inrepair_items, *curr_lost_items, *curr_forsale_items]))
 
     items_no_img_db = store.filter_items(lambda x: (x.image=='') & (x.status!='deleted'))
     items_no_img_wc = {id:item for id, item in wc_products.items() if 'woocommerce-placeholder' in item['img']}
@@ -291,9 +295,7 @@ def check_website_status(store):
         if item is None:
             print(f'{item} nicht gefunden')
             continue
-        if item not in curr_rental_items \
-            and not item.id in curr_reserved_items\
-            and not item.id in curr_inrepair_items:
+        if item not in curr_rental_items and item.id not in non_rentable_item_ids:
             print(f'{code} {name}: ist online auf "verliehen", aber hat keine Ausleihe')
         if item.exists_more_than_once:
             print(f"{code} {name}: Existiert mehr als einmal, ist aber online auf 'Verliehen'")
@@ -326,6 +328,20 @@ def check_website_status(store):
         if item.id in available_wc:
             print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar markiert, aber in Reparatur')
         print(f'Seit {item.last_update if hasattr(item, "last_update") else ""} {item} in Reparatur')
+
+    print('\n------- [INFO] Als "verschollen" markiert -------')
+    curr_lost_items = sorted(curr_lost_items, key=lambda x:x.last_update)
+    for item in curr_lost_items:
+        if item.id in available_wc:
+            print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar markiert, aber verschollen')
+        print(f'Seit {item.last_update if hasattr(item, "last_update") else ""} {item} verschollen')
+
+    print('\n------- [INFO] Als "zum Verkauf" markiert -------')
+    curr_forsale_items = sorted(curr_forsale_items, key=lambda x:x.last_update)
+    for item in curr_forsale_items:
+        if item.id in available_wc:
+            print(f'WARNUNG: {item.id} {item.name} ist online als verfügbar markiert, aber steht zum Verkauf beim Flohmarkt')
+        print(f'Seit {item.last_update if hasattr(item, "last_update") else ""} {item} zum Verkauf beim Flohmarkt')
 
     print('\n' + '-'*55)
 
