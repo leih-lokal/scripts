@@ -16,8 +16,8 @@ import mailbox
 import webbrowser
 from tqdm import tqdm
 
-# with open('settings.json', 'r', encoding='utf-8') as f:
-#     settings = json.load(f)
+with open('settings.json', 'r', encoding='utf-8') as f:
+    settings = json.load(f)
 
 ############ SETTINGS ################################################
 
