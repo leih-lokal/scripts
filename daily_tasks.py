@@ -4,6 +4,7 @@ Created on Wed Jan 20 18:31:23 2021
 
 @author: Simon
 """
+import os
 import re
 import traceback
 import datetime
@@ -16,7 +17,7 @@ import mailbox
 import webbrowser
 from tqdm import tqdm
 
-with open('settings.json', 'r', encoding='utf-8') as f:
+with open(os.path.join(os.path.dirname(__file__), 'settings.json'), 'r', encoding='utf-8') as f:
     settings = json.load(f)
 
 ############ SETTINGS ################################################
