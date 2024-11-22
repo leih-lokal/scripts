@@ -130,10 +130,12 @@ def show_date_picker(title=''):
     return cal.selection_get()
 
 
-def download_bookings_csv():
+def download_bookings_csv(date: datetime.date):
+    # only fetch reservations made in past 14 days
+    from_date_str = (date - datetime.timedelta(days=14)).strftime("%d.%m.%Y") if date is not None else ''
 
-    login_url = 'https://buergerstiftung-karlsruhe.de/wp-login.php'
-    csv_url = 'https://buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&cal=2&anonce=034bb4c437&list=1&search=&dfrom=&dto=&cal=2&cp_appbooking_csv3=Exportieren+nach+CSV'
+    login_url = f'https://buergerstiftung-karlsruhe.de/wp-login.php'
+    csv_url = f'https://buergerstiftung-karlsruhe.de/wp-admin/admin.php?page=cp_apphourbooking&anonce=034bb4c437&list=1&search=&dfrom={from_date_str}&dto=&cal=2&cp_appbooking_csv3=Exportieren+nach+CSV'
 
     with open('settings.json', 'r') as f:
         settings = json.load(f)
@@ -168,7 +170,7 @@ def add_item_names(col):
         if len(row)==0:
             with_names.append('')
             continue
-        item_nrs = row.split(',')
+        item_nrs = [i for i in row.split(',') if i != '']
         try:
             item_nrs = sorted(item_nrs, key=lambda x:int(x))
             item_names = [leihlokal.items.get(int(nr)).name for nr in item_nrs]
@@ -183,24 +185,23 @@ def add_item_names(col):
 
 #%%
 if __name__=='__main__':
+    date = show_date_picker('Bitte Tag wählen')
+    date_str = date.strftime("%d.%m.%Y")
 
-
-    csv_str = download_bookings_csv()
+    csv_str = download_bookings_csv(date=date)
     print('Extracting data...')
-    #%%
+
     f = io.StringIO(csv_str)
     df = pd.read_csv(f, sep=';')
 
     df.fillna('', inplace=True)
     df = df.convert_dtypes('str')
+    # TODO: define "shortcodes" for columns in WPAppointmentHoursBooking plugin (specifically meant for CSV export)
     keep_columns = ['app_starttime_1', 'Ich möchte einen Gegenstand/Gegenstände..',
                     'Dein Vor- und Zuname', 'Ich bin', 'Artikelnummer(n)','app_status_1',
                     'Hast Du noch Kommentare oder Anmerkungen zu Deinem Termin?',
                     'Deine Nutzernummer (falls zur Hand)', 'app_date_1',
                     ]
-
-    date = show_date_picker('Bitte Tag wählen')
-    date_str = date.strftime("%d.%m.%Y")
 
     for column in df.columns:
         if  column in keep_columns: continue
@@ -208,23 +209,23 @@ if __name__=='__main__':
 
     df = df.reindex(keep_columns, axis=1)
     df_selected = df.loc[df['app_date_1'] == date_str]
-    df_selected = df_selected.loc[df['app_status_1'] == 'Genehmigt']
+    df_selected = df_selected.loc[df_selected['app_status_1'].isin(('Genehmigt', 'Approved'))]
     df_selected.drop('app_status_1', axis=1, inplace=True)
 
     df_selected = df_selected.convert_dtypes('str')
 
-    ids_infered = []
+    ids_inferred = []
     for name, neu, customer_id in zip(df_selected['Dein Vor- und Zuname'], df_selected['Ich bin'], df_selected['Deine Nutzernummer (falls zur Hand)']):
         try:
             customer_id = int(customer_id)
         except:
             pass
-        if neu=='NeukundIn':
+        if neu=='Neukund:in':
             customer_id = 'neu'
         elif customer_id=='':
             customer_id = get_customer_id_by_name(name)
-        ids_infered.append(customer_id)
-    df_selected['Deine Nutzernummer (falls zur Hand)'] = ids_infered
+        ids_inferred.append(customer_id)
+    df_selected['Deine Nutzernummer (falls zur Hand)'] = ids_inferred
 
     deposit_infered = []
     for ids_string, mode in zip(df_selected['Artikelnummer(n)'], df_selected['Ich möchte einen Gegenstand/Gegenstände..']):
@@ -265,7 +266,6 @@ if __name__=='__main__':
                         inplace=True, axis=1)
 
     df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x.replace('\r', '').replace('\n', ' ' ).replace('\t', ''))
-    #df_selected['Kommentar'] = df_selected['Kommentar'].map(lambda x: x[:20] + ('[...]' * (len(x)>15)))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('abholen', 'ab'))
     df_selected['a/z'] = df_selected['a/z'].map(lambda x: x.replace('zurückgeben', 'z'))
 

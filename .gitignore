@@ -1,3 +1,5 @@
+.vscode
+.idea
 daily_tasks.sh
 create_clickcollect_overview.sh
 settings.json
