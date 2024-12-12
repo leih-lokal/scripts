@@ -38,7 +38,7 @@ Bei Fragen oder wegen möglicher Verlängerung wenden Sie sich bitte via E-Mail 
 Viele Grüße aus dem leih.lokal.
 
 Gerwigstr. 41, 76131 Karlsruhe
-Öffnungszeiten: Mo, Do: 15-19, Sa: 10-14
+Öffnungszeiten: Mo, Do, Fr: 15-19, Sa: 10-14
 http://www.buergerstiftung-karlsruhe.de/leihlokal/
 
 Diese Email wurde automatisch erstellt."""
@@ -53,7 +53,7 @@ def get_deletion_template(customer):
              f'In deinem Fall ist dies am {lastinteraction} gewesen.\n' \
              f'Wir freuen uns, wenn du weiter Mitglied im leih.lokal sein möchtest.\n'\
              f'In diesem Fall antworte bitte kurz auf diese Mail.\n\n'\
-             f'Liebe Grüße und vielleicht bis bald aus dem leih.lokal\n\nGerwigstr. 41, 76131 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do: 15-19, Sa: 10-14'
+             f'Liebe Grüße und vielleicht bis bald aus dem leih.lokal\n\nGerwigstr. 41, 76131 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 10-14'
     string = urllib.parse.quote(string)
     return string
 
