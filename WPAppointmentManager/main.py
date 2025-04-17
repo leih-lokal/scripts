@@ -14,6 +14,18 @@ couchdb_client = CouchDbClient()
 wc_client = WooCommerceClient()
 wp_client = WordpressClient()
 
+BLOCKED_ITEMS = {
+    5032,  # Biergarnituren
+    6095,  # Kinder Biergarnituren
+    3219,  # Bierbankhussen
+    4091,  # Sektgläser
+    5094,  # Halteverbotsschillder
+    6202,  # Stehtische
+    6203,  # Stehtische
+    3243,  # Stehtischhussen
+    6057,  # Klappstühle
+    6063,  # Pavillon
+}
 
 def all_items_instock(item_ids):
     item_status = couchdb_client.get_status_of_items(item_ids)
@@ -57,6 +69,10 @@ def should_auto_accept(appointment):
 
     if len(appointment["items"]) == 0:
         return False, f"Did not auto accept {appointment_to_string(appointment)} because no item ids could be found"
+    
+    blocked_items = BLOCKED_ITEMS.intersection(set(appointment["items"]))
+    if len(blocked_items) > 0:
+        return False, f"Did not auto accept {appointment_to_string(appointment)} because contains non-rentable items"
 
     allinstock = all_items_instock(appointment["items"])
     if allinstock==True:
