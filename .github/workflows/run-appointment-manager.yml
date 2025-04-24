@@ -5,6 +5,8 @@ concurrency:
    cancel-in-progress: false
 
 on:
+  # Workflows are diabled after 60 days of repo inactivity, which is why we have a cronjob running on the VPS (ferdinand user) that re-enables them according to
+  # https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#enable-a-workflow
   schedule:
     - cron: "0 21 * * *"
   push:
