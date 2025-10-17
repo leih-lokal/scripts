@@ -18,6 +18,7 @@ from tkinter.filedialog import asksaveasfile
 from tkinter import Tk
 import json
 import io
+import time
 from mechanize import Browser #pip install mechanize
 import leihlokal
 import holidays
@@ -36,6 +37,7 @@ def startfile(filepath):
         os.startfile(filepath)
     else:
         subprocess.call(('xdg-open', filepath))
+    time.sleep(3)  # make sure excel / libreoffice is launched before shell exits
 
 def calculate_opening_days_since(date):
     BW_holidays = holidays.CountryHoliday('DE', prov='BW')
