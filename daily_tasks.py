@@ -16,13 +16,24 @@ import json
 import mailbox
 import webbrowser
 from tqdm import tqdm
+import subprocess
+import platform
 
 with open(os.path.join(os.path.dirname(__file__), 'settings.json'), 'r', encoding='utf-8') as f:
     settings = json.load(f)
 
+def is_win():
+    return platform.system().lower() == 'windows'
+
+def is_linux():
+    return platform.system().lower() == 'linux'
+
+def is_macos():
+    return platform.system().lower() == 'darwin'
+
 ############ SETTINGS ################################################
 
-def get_reminder_template(customer, rental):
+def get_reminder_template(customer, rental, urlescape=True):
     rented_on = rental.rented_on.strftime('%d.%m.%Y')
     to_return_on = rental.to_return_on.strftime('%d.%m.%Y')
     string = f"""Liebe:r {customer.firstname} {customer.lastname}
@@ -42,10 +53,11 @@ Gerwigstr. 41, 76131 Karlsruhe
 http://www.buergerstiftung-karlsruhe.de/leihlokal/
 
 Diese Email wurde automatisch erstellt."""
-    string = urllib.parse.quote(string)
+    if urlescape:
+        string = urllib.parse.quote(string)
     return string
 
-def get_deletion_template(customer):
+def get_deletion_template(customer, urlescape=True):
     lastinteraction = customer.last_interaction().strftime('%d.%m.%Y')
     string = f'Liebe:r {customer.firstname} {customer.lastname},\n\n'\
              f'um die persönlichen Daten unserer Kund:innen zu schützen löschen wir diese ' \
@@ -54,7 +66,8 @@ def get_deletion_template(customer):
              f'Wir freuen uns, wenn du weiter Mitglied im leih.lokal sein möchtest.\n'\
              f'In diesem Fall antworte bitte kurz auf diese Mail.\n\n'\
              f'Liebe Grüße und vielleicht bis bald aus dem leih.lokal\n\nGerwigstr. 41, 76131 Karlsruhe\nTelefon: 0721/47004551\nÖffnungszeiten: Mo, Do, Fr: 15-19, Sa: 10-14'
-    string = urllib.parse.quote(string)
+    if urlescape:
+        string = urllib.parse.quote(string)
     return string
 
 
@@ -238,14 +251,18 @@ def send_notification_for_customers_on_deletion(store):
 
 def send_deletion_reminder(customer):
     """doesnt actually send, just opens the mail program with the template"""
-    body = get_deletion_template(customer)
+    body = get_deletion_template(customer, urlescape=not is_macos())
     subject = f'[leih.lokal] Löschung Ihrer Daten im leih.lokal nach Inaktivität (Kunden-Nr. {customer.id}).'
     recipient = customer.email
 
     if not '@' in recipient:
         print(f'Keine Email: {customer}, direkt löschen.')
         return
-    webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
+    
+    if is_macos():
+        subprocess.run(['open', 'mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body], text=True)
+    else:
+        webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
     return
 
 def send_return_reminder(rental):
@@ -255,14 +272,18 @@ def send_return_reminder(rental):
     doesnt actually send, just opens the mail program with the template
     """
     customer = rental.customer
-    body = get_reminder_template(customer, rental)
+    body = get_reminder_template(customer, rental, urlescape=not is_macos())
     subject = f'[leih.lokal] Erinnerung an Rückgabe von {rental.item_name} (Nr. {rental.item_id})'
     recipient = customer.email
 
     if not '@' in recipient:
         print(f'{customer.firstname} {customer.lastname}({customer.id}, rented {rental.item_id}:{rental.item_name}) has no email. Please call manually')
         return
-    webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
+    
+    if is_macos():
+        subprocess.run(['open', 'mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body], text=True)
+    else:
+        webbrowser.open('mailto:?to=' + recipient + '&subject=' + subject + '&body=' + body, new=1)
     return
 
 
@@ -362,19 +383,6 @@ if __name__ == '__main__':
     except Exception as e:
         traceback.print_exc()
         print(e)
-
-    # Send reminder emails
-    #answer = input('\nVersäumniserinnerungen vorbereiten? (J/N)\n')
-    #if 'J' in answer.upper():
-    #    try:
-    #        send_notifications_for_overdue_rental(store)
-    #    except FileNotFoundError as e:
-    #        print('ERROR: Thunderbird mailbox file nicht gefunden?')
-    #        print('Muss in settings.json angegeben werden.')
-    #        print(e)
-    #    except Exception as e:
-    #        traceback.print_exc()
-    #        print(e)
 
     # Send customer deletion mails
     print('-'*20)

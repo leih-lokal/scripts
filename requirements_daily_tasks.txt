@@ -1,3 +1,5 @@
 beautifulsoup4
 scikit-learn
 tqdm
+requests
+cloudant
